@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 20.  양서연     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+
+<mapper namespace="kr.or.ddit.lab.dao.CounselingDAO">
+	<sql id="searchFrag">
+		<trim prefix="WHERE">
+			REF_COUN IS NULL AND C.COUN_STATE='B1'
+			<if test="simpleCondition neq null">
+				<choose>
+					<when test="simpleCondition.searchType eq 'memId'">
+						AND C.MEM_ID = #{simpleCondition.searchWord}
+					</when>
+					<when test="simpleCondition.searchType eq 'isrefed'">
+						AND (SELECT COUNT(COUN_NO) FROM COUNSELING WHERE REF_COUN=C.COUN_NO)=0
+					</when>
+				</choose>
+			</if>
+		</trim>
+	</sql>
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM COUNSELING C LEFT OUTER JOIN MEMBER M ON(C.MEM_ID = M.MEM_ID)
+		<include refid="searchFrag" />
+	</select>
+	<resultMap type="CounselingVO" id="CounMap">
+		<id property="counNo" column="COUN_NO"/>
+	</resultMap>
+	<select id="selectCounList" parameterType="PagingVO" resultMap="CounMap">
+		WITH COUNBOARD AS(
+		    SELECT
+			    C.COUN_NO, C.MEM_ID, M.MEM_NAME, C.COUN_TITLE, C.COUN_CONTENT
+			    , to_char(C.COUN_DATE, 'YYYY-MM-DD') COUN_DATE
+			    , C.COUN_STATE, C.REF_COUN, C.PUB_CHK
+			    , (SELECT COUNT(COUN_NO) FROM COUNSELING WHERE REF_COUN=C.COUN_NO) ISREFED
+			    , (SELECT COUNT(TBL_ID) FROM ATTACH WHERE TBL_ID=C.COUN_NO) ISATTACHED
+		    FROM COUNSELING C LEFT OUTER JOIN MEMBER M ON(C.MEM_ID= M.MEM_ID)
+		    <include refid="searchFrag" />
+		    ORDER BY C.COUN_DATE DESC
+		)
+		SELECT A.*
+		FROM(
+		    SELECT ROWNUM RNUM, COUNBOARD.*
+		    FROM COUNBOARD
+		    ORDER BY RNUM
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<resultMap type="CounselingVO" id="counMap" autoMapping="true">
+		<id property="counNo" column="COUN_NO"/>
+		<association property="reCoun" javaType="CounselingVO" autoMapping="true" >
+			<id property="counNo" column="COUN_NO2"/>
+			<result property="counNo" column="COUN_NO2"/>
+			<result property="memId" column="MEM_ID2"/>
+			<result property="counTitle" column="COUN_TITLE2"/>
+			<result property="counContent" column="COUN_CONTENT2"/>
+			<result property="counDate" column="COUN_DATE2"/>
+			<result property="counState" column="COUN_STATE2"/>
+		</association>
+	</resultMap>
+	<select id="selectCoun" parameterType="string" resultMap="counMap">
+		SELECT
+		    A.COUN_NO
+		    , A.MEM_ID
+		    , M.MEM_NAME
+		    , A.COUN_TITLE
+		    , A.COUN_CONTENT
+		    , to_char(A.COUN_DATE,'YYYY-MM-DD') COUN_DATE
+		    , A.COUN_STATE
+		    , A.COUN_HIT
+		    , A.PUB_CHK
+		    , B.COUN_NO COUN_NO2
+		    , B.MEM_ID MEM_ID2
+		    , B.COUN_TITLE COUN_TITLE2
+		    , B.COUN_CONTENT COUN_CONTENT2
+		    , to_char(B.COUN_DATE,'YYYY-MM-DD') COUN_DATE2
+		    , B.COUN_STATE COUN_STATE2
+		FROM COUNSELING A 
+				LEFT OUTER JOIN COUNSELING B ON(A.COUN_NO = B.REF_COUN)
+				LEFT OUTER JOIN MEMBER M ON(A.MEM_ID= M.MEM_ID)
+		WHERE A.COUN_NO= #{counNo,jdbcType=VARCHAR}
+	</select>
+	<insert id="insertCoun" parameterType="CounselingVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="counNo">
+			SELECT 'CS' || LPAD(COUNS_SEQ.NEXTVAL,6,0) 
+			FROM DUAL
+		</selectKey>
+		INSERT INTO COUNSELING(
+		    COUN_NO
+		    , MEM_ID
+		    , COUN_TITLE
+		    , COUN_CONTENT
+		    , COUN_DATE
+		    , COUN_STATE
+		    , REF_COUN
+		    <if test="pubChk neq null">
+		    , PUB_CHK
+		    </if>
+		)
+		VALUES(
+		    #{counNo,jdbcType=VARCHAR}
+		    , #{memId,jdbcType=VARCHAR}
+		    , #{counTitle,jdbcType=VARCHAR}
+		    , #{counContent,jdbcType=CLOB}
+		    , SYSDATE
+		    , 'B1'
+		    , #{refCoun,jdbcType=VARCHAR}
+		    <if test="pubChk neq null">
+		    , #{pubChk,jdbcType=VARCHAR}
+		    </if>
+		)
+	</insert>
+	
+	<update id="updateCoun" parameterType="CounselingVO">
+		UPDATE COUNSELING
+		SET COUN_TITLE = #{counTitle,jdbcType=VARCHAR}
+		    , COUN_CONTENT = #{counContent,jdbcType=CLOB}
+		WHERE COUN_NO = #{counNo,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="deleteCoun" parameterType="string">
+		UPDATE COUNSELING 
+		SET COUN_STATE = 'B2'
+		WHERE COUN_NO = #{counNo,jdbcType=VARCHAR} 
+			OR REF_COUN = #{counNo,jdbcType=VARCHAR}
+	</update>
+
+	<!-- 조회수 -->
+	<update id="incrementHit" parameterType="string">
+		UPDATE COUNSELING
+		SET
+		COUN_HIT = COUN_HIT + 1
+		WHERE COUN_NO = #{counNo}
+	</update>
+</mapper>

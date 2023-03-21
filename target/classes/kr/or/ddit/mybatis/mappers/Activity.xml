@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.ActivityDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+	<select id="selectActivityList" parameterType="String" resultType="ActivityVO">
+		SELECT ACT_SN, ACT_NAME, ACT_CATEGORY, ACT_PERIOD, ACT_INSERT_DATE
+		FROM ACTIVITY
+		WHERE MEM_ID = #{memId}
+		AND ACT_DELETE_DATE IS NULL
+	</select>
+
+	<select id="selectActivity" parameterType="String" resultType="ActivityVO">
+		SELECT *
+		FROM ACTIVITY
+		WHERE ACT_SN = #{actSn}
+		AND ACT_DELETE_DATE IS NULL
+	</select>
+
+	<insert id="insertActivity" parameterType="ActivityVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="actSn">
+			SELECT 'ACT'||LPAD(ACTIVITY_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ACTIVITY (
+		    ACT_SN,
+		    MEM_ID,
+		    ACT_NAME,
+		    ACT_CATEGORY,
+		    ACT_INSTITUTION,
+		    ACT_PERIOD,
+		    ACT_INSERT_DATE
+		) VALUES (
+			#{actSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{actName,jdbcType=VARCHAR}
+			, #{actCategory,jdbcType=VARCHAR}
+			, #{actInstitution,jdbcType=VARCHAR}
+			, #{actPeriod,jdbcType=VARCHAR}
+			, SYSDATE
+		)
+	</insert>
+
+	<update id="updateActivity" parameterType="ActivityVO">
+		UPDATE ACTIVITY
+		    SET
+			    ACT_NAME = #{actName,jdbcType=VARCHAR}
+			    , ACT_CATEGORY = #{actCategory,jdbcType=VARCHAR}
+			    , ACT_INSTITUTION = #{actInstitution,jdbcType=VARCHAR}
+			    , ACT_PERIOD = #{actPeriod,jdbcType=VARCHAR}
+		WHERE
+		    ACT_SN = #{actSn,jdbcType=VARCHAR}
+	</update>
+
+	<delete id="deleteActivity" parameterType="String">
+		UPDATE ACTIVITY
+			SET
+				ACT_DELETE_DATE = SYSDATE
+		WHERE
+			ACT_SN = #{actSn,jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="selectActivityForResume" parameterType="String" resultType="ActivityVO">
+		SELECT *
+		FROM ACTIVITY
+		WHERE MEM_ID = #{memId}
+		AND ACT_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM ACTIVITY A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.ACT_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>
+</mapper>
+

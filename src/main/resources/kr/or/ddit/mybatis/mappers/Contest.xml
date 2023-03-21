@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lab.dao.ContestDAO">
+
+<!-- 진행 중인 공모전 조회 -->
+<select id="selectContestList" parameterType="PagingVO" resultType="ContestVO">
+	SELECT CONT_NO, CONT_NAME, CONT_CO, CONT_START, CONT_DEAD, CONT_FIELD, CONT_CONTENT
+	FROM CONTEST
+	WHERE CONT_DEAD > SYSDATE
+</select>
+
+<!-- 공모전 총 개수 조회 -->
+<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+	SELECT COUNT(*)
+	FROM CONTEST
+</select>
+
+<!-- 공모전 detail 조회 -->
+<select id="selectContest" parameterType="String" resultType="ContestVO">
+	SELECT CONT_NO, CONT_NAME, CONT_CO, CONT_START, CONT_DEAD, CONT_FIELD, CONT_CONTENT,
+		   CONT_HIT, CONT_SUMMERY, CONT_TARGET, CONT_AWARD, CONT_ROAD, CONT_FILE, CONT_ASK, CONT_URL
+	FROM CONTEST
+	WHERE CONT_NO = #{contNo}
+</select>
+
+<!-- 공모전 Insert -->
+<insert id="insertContest" parameterType="ContestVO">
+	<selectKey>
+		SELECT 'CONT'||LPAD(CONT_SEQ.NEXTVAL, 6, 0)
+		FROM DUAL
+	</selectKey>
+	INSERT INTO CONTEST (
+		CONT_NO,
+		CONT_NAME,
+		CONT_CO,
+		CONT_START,
+		CONT_DEAD,
+		CONT_FIELD,
+		CONT_HIT,
+		CONT_SUMMERY,
+		CONT_TARGET,
+		CONT_AWARD,
+		CONT_ROAD,
+		CONT_FILE,
+		CONT_ASK
+	) VALUES (
+		#{contNo,jdbcType=VARCHAR},
+		#{contName,jdbcType=VARCHAR},
+		#{contCo,jdbcType=VARCHAR},
+		#{contStart,jdbcType=DATE},
+		#{contDead,jdbcType=DATE},
+		#{contField,jdbcType=VARCHAR},
+		0,
+		#{contSummery,jdbcType=VARCHAR},
+		#{contAward,jdbcType=INTEGER},
+		#{contRoad,jdbcType=VARCHAR},
+		#{contFile,jdbcType=VARCHAR},
+		#{contAsk,jdbcType=VARCHAR}		
+	)
+</insert>
+
+<update id="incrementHit" parameterType="String">
+	UPDATE CONTEST
+	SET
+	CONT_HIT = CONT_HIT + 1
+	WHERE CONT_NO = #{contNo}
+</update>
+
+
+
+</mapper>

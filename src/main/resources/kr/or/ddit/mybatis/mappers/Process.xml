@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.process.dao.ProcessDAO">
+	
+	
+	<!-- 한 회사의 모든 공고에 대한 채용과정 -->
+	<select id="selectProcessList" parameterType="String" resultType="ProcessVO">
+		SELECT
+			A.DA_NO
+			, A.PROCESS_CODE_ID
+			, A.PROCESS_SN
+			, A.PROCESS_START_DATE
+			, A.PROCESS_END_DATE
+			, A.PROCESS_WAY
+			, A.PROCESS_SCORE
+			, A.TBL_ID
+			, A.PROCESS_LIMIT
+			, A.PROCESS_DELETE_DATE
+			, A.PROCESS_INSERT_DATE
+<!-- 			, B.DA_FD -->
+<!-- 			, B.DA_COUNT -->
+<!-- 			, B.DA_TASK -->
+<!-- 			, B.DA_DEPARTMENT -->
+<!-- 			, B.DA_CONDITION -->
+<!-- 			, B.DA_PREFER -->
+<!-- 			, B.DA_WORKDAY -->
+<!-- 			, B.DA_WORKTIME -->
+<!-- 			, B.DA_CAR_YEER -->
+<!-- 			, B.REGION_CODE -->
+<!-- 			, B.EMPLTYPE_CODE -->
+<!-- 			, B.JOB_CODE -->
+			, C.ANNO_NO
+<!-- 			, C.CMP_ID -->
+<!-- 			, C.MEM_ID -->
+<!-- 			, C.ANNO_TITLE -->
+<!-- 			, C.ANNO_CONTENT -->
+<!-- 			, C.ANNO_STARTDATE -->
+<!-- 			, C.ANNO_ENDDATE -->
+<!-- 			, C.ANNO_HIT -->
+<!-- 			, C.ANNO_DATE -->
+<!-- 			, C.ANNO_STATE_CD -->
+<!-- 			, C.ANNO_WORKENV -->
+<!-- 			, C.ANNO_PROBATION -->
+<!-- 			, C.ANNO_SALARY -->
+<!-- 			, C.INDUSTRY_CODE -->
+<!-- 			, C.EDU_CODE -->
+		FROM PROCESS A
+		INNER JOIN ANNO_DETAIL B ON A.DA_NO = B.DA_NO
+		INNER JOIN ANNO C ON B.ANNO_NO = C.ANNO_NO
+		WHERE C.CMP_ID = #{cmpId}
+		AND A.PROCESS_DELETE_DATE IS NULL	
+	</select>
+
+	<!-- 한 공고에 대한 채용과정 -->
+	<select id="selectProcessListForAnno" parameterType="String" resultType="ProcessVO">
+		SELECT
+			A.DA_NO
+			, A.PROCESS_CODE_ID
+			, A.PROCESS_SN
+			, A.PROCESS_START_DATE
+			, A.PROCESS_END_DATE
+			, A.PROCESS_WAY
+			, A.PROCESS_SCORE
+			, A.TBL_ID
+			, A.PROCESS_LIMIT
+			, A.PROCESS_DELETE_DATE
+			, A.PROCESS_INSERT_DATE
+			, C.ANNO_NO
+		FROM PROCESS A
+		INNER JOIN ANNO_DETAIL B ON A.DA_NO = B.DA_NO
+		INNER JOIN ANNO C ON B.ANNO_NO = C.ANNO_NO
+		WHERE B.ANNO_NO = #{annoNo}
+		AND A.PROCESS_DELETE_DATE IS NULL	
+	</select>
+
+	<!-- 한 세부공고에 대한 채용과정 -->
+	<select id="selectProcessListForDetail" parameterType="String" resultType="ProcessVO">
+		SELECT
+			A.DA_NO
+			, A.PROCESS_CODE_ID
+			, A.PROCESS_SN
+			, A.PROCESS_START_DATE
+			, A.PROCESS_END_DATE
+			, A.PROCESS_WAY
+			, A.PROCESS_SCORE
+			, A.TBL_ID
+			, A.PROCESS_LIMIT
+			, A.PROCESS_DELETE_DATE
+			, A.PROCESS_INSERT_DATE
+			, C.ANNO_NO
+		FROM PROCESS A
+		INNER JOIN ANNO_DETAIL B ON A.DA_NO = B.DA_NO
+		INNER JOIN ANNO C ON B.ANNO_NO = C.ANNO_NO
+		WHERE B.ANNO_NO = (
+                            SELECT ANNO_NO
+                            FROM ANNO_DETAIL
+                            WHERE DA_NO = #{daNo}
+                        	)
+		AND A.PROCESS_DELETE_DATE IS NULL
+	</select>
+	
+	<!-- 한 채용과정 -->
+	<select id="selectProcess" parameterType="String" resultType="ProcessVO">
+		SELECT
+			A.DA_NO
+			, A.PROCESS_CODE_ID
+			, A.PROCESS_SN
+			, A.PROCESS_START_DATE
+			, A.PROCESS_END_DATE
+			, A.PROCESS_WAY
+			, A.PROCESS_SCORE
+			, A.TBL_ID
+			, A.PROCESS_LIMIT
+			, A.PROCESS_DELETE_DATE
+			, A.PROCESS_INSERT_DATE
+			, C.ANNO_NO
+		FROM PROCESS A
+		INNER JOIN ANNO_DETAIL B ON A.DA_NO = B.DA_NO
+		INNER JOIN ANNO C ON B.ANNO_NO = C.ANNO_NO
+		WHERE B.DA_NO = #{daNo}
+	</select>
+	
+	<insert id="insertProcess" parameterType="ProcessVO">
+		INSERT ALL
+		<foreach collection="processList" item="process" index="idx">
+			INTO PROCESS (
+			    DA_NO
+			    , PROCESS_CODE_ID
+			    , PROCESS_SN
+			    , PROCESS_START_DATE
+			    , PROCESS_END_DATE
+			    , PROCESS_WAY
+			    , PROCESS_SCORE
+			    , TBL_ID
+			    , PROCESS_LIMIT
+			    , PROCESS_INSERT_DATE
+			) VALUES (
+				#{process.daNo,jdbcType=VARCHAR}
+				, #{process.processCodeId,jdbcType=VARCHAR}
+				, (#{idx} + 1)
+				, TO_DATE(#{process.processStartDate,jdbcType=DATE}, 'YYYY-MM-DD HH24:MI')
+				, TO_DATE(#{process.processEndDate,jdbcType=DATE}, 'YYYY-MM-DD HH24:MI')
+				, #{process.processWay,jdbcType=VARCHAR}
+				, #{process.processScore,jdbcType=NUMERIC}
+				, #{process.tblId,jdbcType=VARCHAR}
+				, #{process.processLimit,jdbcType=VARCHAR}
+				, SYSDATE
+			)
+		</foreach>
+		
+		SELECT * FROM DUAL
+	</insert>
+	
+	<update id="updateProcess" parameterType="kr.or.ddit.process.vo.ProcessVO">
+		UPDATE PROCESS
+			SET
+				PROCESS_SN = #{processSn,jdbcType=NUMERIC}
+				, PROCESS_START_DATE = #{processStartDate,jdbcType=DATE}
+				, PROCESS_END_DATE = #{processEndDate,jdbcType=DATE}
+				, PROCESS_WAY = #{processWay,jdbcType=VARCHAR}
+				, PROCESS_SCORE = #{processScore,jdbcType=NUMERIC}
+				, TBL_ID = #{tblId,jdbcType=VARCHAR}
+				, PROCESS_LIMIT = #{processLimit,jdbcType=VARCHAR}
+		WHERE	DA_NO = #{daNo,jdbcType=VARCHAR}
+		AND		PROCESS_CODE_ID = #{processCodeId,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteProcess" parameterType="String">
+		UPDATE PROCESS
+			SET
+				PROCESS_DELETE_DATE = SYSDATE
+		WHERE	DA_NO = #{daNo,jdbcType=VARCHAR}
+		AND		PROCESS_CODE_ID = #{processCodeId,jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteTotallyProcess" parameterType="String">
+		DELETE FROM PROCESS
+		WHERE DA_NO = #{daNo}
+	</delete>
+	
+<!-- 	<resultMap type="kr.or.ddit.process.vo.ItemVO" id="itemMap"> -->
+<!-- 		<id property="daNo" column="DA_NO"/> -->
+<!-- 		<id property="processCodeId" column="PROCESS_CODE_ID"/> -->
+<!-- 		<result property="daNo" column="DA_NO"/> -->
+<!-- 		<result property="processCodeId" column="PROCESS_CODE_ID"/> -->
+<!-- 		<result property="itemCodeId" column="ITEM_CODE_ID"/> -->
+<!-- 		<result property="itemCodeName" column="ITEM_CODE_NAME"/> -->
+<!-- 		<result property="itemAsk" column="ITEM_ASK"/> -->
+<!-- 	</resultMap> -->
+	
+	<select id="selectItemList" parameterType="String" resultType="ItemVO">
+		SELECT 
+			A.DA_NO
+			, B.PROCESS_CODE_ID
+			, A.ITEM_CODE_ID
+			, B.ITEM_CODE_NAME
+			, A.ITEM_ASK
+		FROM ITEM A
+		INNER JOIN ITEM_CODE B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID
+		WHERE A.DA_NO = #{daNo}
+		ORDER BY A.ITEM_CODE_ID
+	</select>
+	
+	<select id="selectItemListNotAdded" parameterType="String" resultType="ItemVO">
+		SELECT ITEM_CODE_ID, PROCESS_CODE_ID, ITEM_CODE_NAME
+		FROM ITEM_CODE
+		MINUS
+		SELECT A.ITEM_CODE_ID, A.PROCESS_CODE_ID, A.ITEM_CODE_NAME
+		FROM ITEM_CODE A
+		INNER JOIN ITEM B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID
+		WHERE B.DA_NO = #{daNo}
+	</select>
+	
+	<insert id="insertItemList" parameterType="java.util.List">
+		INSERT ALL
+		<foreach collection="list" item="item" index="idx">
+			INTO ITEM (
+				DA_NO
+				, ITEM_CODE_ID
+				, ITEM_ASK
+			) VALUES (
+				#{item.daNo}
+				, #{item.itemCodeId}
+				, #{item.itemAsk}
+			)
+		</foreach>
+		
+		SELECT * FROM DUAL
+	</insert>
+	
+	<insert id="insertItemFormList" parameterType="map">
+		INSERT ALL
+		<foreach collection="itemList" item="item" index="idx">
+			INTO ITEM_FORM (
+				CMP_ID
+				, ITEM_CODE_ID
+				, ITEM_FORM_NO
+				, ITEM_FORM_ASK
+				, ITEM_FORM_INSERT_DATE
+			) VALUES (
+				#{cmpId}
+				, #{item.itemCodeId}
+				, (SELECT NVL(MAX(ITEM_FORM_NO), 0) + 1 FROM ITEM_FORM)
+				, #{item.itemAsk}
+				, SYSDATE
+			)
+		</foreach>
+		
+		SELECT * FROM DUAL
+	</insert>
+	
+	<delete id="deleteItem" parameterType="ItemVO">
+		DELETE FROM ITEM
+		WHERE DA_NO = #{daNo}
+		AND ITEM_CODE_ID = #{itemCodeId}
+	</delete>
+	
+	<update id="updateItem" parameterType="hashMap">
+		UPDATE ITEM
+			SET
+				ITEM_CODE_ID = #{item.itemCodeId, jdbcType=VARCHAR}
+				, ITEM_ASK = #{item.itemAsk, jdbcType=VARCHAR}
+		WHERE DA_NO = #{item.daNo, jdbcType=VARCHAR}
+		AND ITEM_CODE_ID = #{originCodeId, jdbcType=VARCHAR}
+	</update>
+	
+	<select id="selectItemFormList" parameterType="hashMap" resultType="ItemVO">
+<!--     	SELECT -->
+<!-- 	        B.PROCESS_CODE_ID -->
+<!-- 	        , A.ITEM_CODE_ID -->
+<!-- 	        , B.ITEM_CODE_NAME         -->
+<!-- 	        , A.ITEM_FORM_ASK AS ITEM_ASK -->
+<!-- 	    FROM ITEM_FORM A -->
+<!-- 	    INNER JOIN ITEM_CODE B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID -->
+<!-- 	    WHERE A.CMP_ID = #{cmpId} -->
+<!-- 	    AND ITEM_FORM_DELETE_DATE IS NULL -->
+<!-- 		MINUS -->
+<!-- 	    SELECT -->
+<!-- 	        B.PROCESS_CODE_ID -->
+<!-- 	        , A.ITEM_CODE_ID -->
+<!-- 	        , B.ITEM_CODE_NAME         -->
+<!-- 	        , A.ITEM_ASK -->
+<!-- 	    FROM ITEM A -->
+<!-- 	    INNER JOIN ITEM_CODE B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID -->
+<!-- 		ORDER BY 1 -->
+		SELECT A.ITEM_CODE_ID, B.ITEM_CODE_NAME, A.ITEM_FORM_ASK AS ITEM_ASK, B.PROCESS_CODE_ID
+		FROM ITEM_FORM A
+		INNER JOIN ITEM_CODE B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID
+		WHERE A.CMP_ID = #{cmpId}
+		MINUS
+		SELECT A.ITEM_CODE_ID, B.ITEM_CODE_NAME, A.ITEM_ASK, B.PROCESS_CODE_ID
+		FROM ITEM A
+		INNER JOIN ITEM_CODE B ON A.ITEM_CODE_ID = B.ITEM_CODE_ID
+		WHERE A.DA_NO = #{daNo}
+		ORDER BY 1
+	</select>
+	
+	<select id="selectProcessListFor" parameterType="String" resultType="String">
+		SELECT A.PROCESS_CODE_ID
+		FROM PROCESS A
+		WHERE A.DA_NO = #{daNo}
+	</select>
+	
+</mapper>

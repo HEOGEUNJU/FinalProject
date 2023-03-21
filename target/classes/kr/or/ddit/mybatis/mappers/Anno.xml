@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  양서연     최초작성               -->
+<!--  2023. 2. 20. 최경수     추가               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+
+<mapper namespace="kr.or.ddit.announcement.dao.AnnoDAO">
+	<sql id="searchFrag">
+		<trim prefix="WHERE">
+			ANNO_STATE_CD='B1'
+		    <if test="detailCondition neq null">
+		    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.industryCode)">
+		    		AND INDUSTRY_CODE = #{detailCondition.keyword.industryCode}
+		    	</if>
+		    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.regionCode)
+					    	or @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.job)
+					    	or @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.careerName)">
+		    		AND(
+		    		<trim prefixOverrides="OR">
+				    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.regionCode)">
+				    		OR REGION_CODE = #{detailCondition.keyword.regionCode}
+				    	</if>
+				    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.job)">
+				    		OR JOB_CODE = #{detailCondition.keyword.job}
+				    	</if>
+				    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.careerName)">
+				    		OR CAREER_NAME = #{detailCondition.keyword.careerName}
+				    	</if>
+		    		</trim>
+		    		)
+		    	</if>
+		    	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.keyword.searchWord)">
+		    		AND INSTR(ANNO_TITLE, #{detailCondition.keyword.searchWord}) > 0
+		    	</if>
+		    </if>
+	    </trim>
+	</sql>
+	<sql id="sortFrag">
+		<if test="">
+			ORDER BY ANNO_DATE DESC
+		</if>
+		<if test="">
+			ORDER BY ANNO_ENDDATE ASC
+		</if>
+	</sql>
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(DISTINCT A.ANNO_NO)
+        FROM ANNO A LEFT OUTER JOIN ANNO_DETAIL D ON (A.ANNO_NO = D.ANNO_NO)
+		            LEFT OUTER JOIN ANNO_CAREER AC ON (AC.DA_NO = D.DA_NO)
+		            INNER JOIN COMPANY C ON (C.CMP_ID = A.CMP_ID)
+		<include refid="searchFrag" />
+	</select>
+
+	<resultMap type="AnnoVO" id="annoListMap" autoMapping="true">
+		<id property="annoNo" column="ANNO_NO"/>
+		<association property="company" javaType="CompanyVO" autoMapping="true" />
+		<collection  property="detailList" ofType="AnnoDetailVO" autoMapping="false">
+			<id property="daNo" column="DA_NO" />
+			<result property="jobName" column="JOB_NAME"/>
+			<result property="empltypeCode" column="EMPLTYPE_CODE"/>
+			<result property="empltypeName" column="EMPLTYPE_NAME"/>
+			<association property="regionVO" javaType="AnnoRegionVO" autoMapping="true"/>
+			<collection property="positionList" ofType="AnnoPositionVO" autoMapping="false">
+				<id property="positionCode" column="POSITION_CODE" />
+				<result property="positionName" column="POSITION_NAME"/>
+			</collection>
+			<collection property="careerNames" ofType="string" autoMapping="false">
+				<result column="CAREER_NAME"/>
+			</collection>
+		</collection>
+	</resultMap>
+	<select id="selectAnnoList" parameterType="PagingVO" resultMap="annoListMap">
+		WITH DETAILVIEW AS (
+		    SELECT AD.DA_NO, ANNO_NO, DA_FD, DA_COUNT, DA_TASK, DA_DEPARTMENT, DA_CONDITION, DA_PREFER
+		        , DA_WORKDAY, DA_WORKTIME, DA_CAR_YEER
+		        , AD.EMPLTYPE_CODE, EMPLTYPE_NAME
+				, AD.JOB_CODE, JOB_NAME
+		        , AD.REGION_CODE, REGION_NAME
+		        , POSITION_CODE, POSITION_NAME, CAREER_NAME
+		    FROM ANNO_DETAIL AD LEFT OUTER JOIN
+		        (
+		            SELECT DA_NO, ANNO_POSITION.POSITION_CODE, POSITION_NAME
+		            FROM ANNO_POSITION INNER JOIN CD_POSITION ON (ANNO_POSITION.POSITION_CODE = CD_POSITION.POSITION_CODE)
+		        ) AP ON (AD.DA_NO = AP.DA_NO)
+		        LEFT OUTER JOIN ANNO_CAREER AC ON (AD.DA_NO = AC.DA_NO)
+		        LEFT OUTER JOIN CD_REGION CR ON (AD.REGION_CODE = CR.REGION_CODE)
+		        LEFT OUTER JOIN CD_JOB CJ ON (AD.JOB_CODE = CJ.JOB_CODE)
+		        LEFT OUTER JOIN CD_EMPLTYPE CE ON(AD.EMPLTYPE_CODE = CE.EMPLTYPE_CODE)
+		),ANNOVIEW AS(
+			SELECT K.*, ROWNUM RNUM
+			FROM (
+				SELECT ANNO.*
+				FROM ANNO
+				WHERE ANNO_STATE_CD='B1'
+				ORDER BY ANNO_DATE DESC
+				) K
+		), ANNOBOARD AS(
+		    SELECT  A.RNUM, A.ANNO_NO, A.CMP_ID, A.ANNO_TITLE
+				, A.ANNO_STARTDATE, A.ANNO_ENDDATE, A.ANNO_HIT, A.ANNO_DATE
+				, A.ANNO_STATE_CD, A.ANNO_SALARY, A.INDUSTRY_CODE, A.EDU_CODE
+				, (SELECT INDUSTRY_NAME FROM CD_INDUSTRY WHERE CD_INDUSTRY.INDUSTRY_CODE = A.INDUSTRY_CODE) INDUSTRY_NAME
+				, (SELECT EDU_NAME FROM CD_EDUCATION WHERE CD_EDUCATION.EDU_CODE = A.EDU_CODE) EDU_NAME
+				, C.CMP_NAME
+				<if test="memId neq null">
+				, (SELECT COUNT(MEM_ID) FROM LIKE_ANNO WHERE MEM_ID=#{memId} AND ANNO_NO=A.ANNO_NO) ACHECK
+				, (SELECT COUNT(MEM_ID) FROM LIKE_COMPANY WHERE MEM_ID=#{memId} AND CMP_ID=A.CMP_ID) CCHECK
+				</if>
+				, DA_NO, DA_FD, DA_COUNT, DA_TASK, DA_DEPARTMENT, DA_CONDITION, DA_PREFER
+				, DA_WORKDAY, DA_WORKTIME, DA_CAR_YEER
+				, EMPLTYPE_CODE, EMPLTYPE_NAME, JOB_CODE, JOB_NAME
+				, REGION_CODE , REGION_NAME
+				, POSITION_CODE, POSITION_NAME, CAREER_NAME
+		    FROM ANNOVIEW A LEFT OUTER JOIN DETAILVIEW D ON (A.ANNO_NO = D.ANNO_NO)
+			                LEFT OUTER JOIN LIKE_ANNO LA ON (A.ANNO_NO = LA.ANNO_NO)
+			                INNER JOIN COMPANY C ON (C.CMP_ID = A.CMP_ID)
+		    <include refid="searchFrag" />
+		    ORDER BY ANNO_DATE DESC
+		)
+		SELECT A.*
+		FROM(
+		    SELECT ANNOBOARD.*
+		    FROM ANNOBOARD
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+		ORDER BY RNUM
+	</select>
+
+
+	<resultMap type="AnnoVO" id="annoMap" autoMapping="true">
+		<id property="annoNo" column="ANNO_NO" />
+		<association property="company" javaType="CompanyVO" autoMapping="true" />
+		<collection property="detailList" ofType="AnnoDetailVO" autoMapping="true">
+			<id property="daNo" column="DA_NO" />
+			<result property="job0" column="JOB0"/>
+			<result property="job1" column="JOB1"/>
+			<association property="regionVO" javaType="AnnoRegionVO" autoMapping="true"/>
+			<collection property="careerNames" ofType="string">
+				<id property="careerNames" column="CAREER_NAME"/>
+			</collection>
+			<collection property="positionList" ofType="AnnoPositionVO" autoMapping="true">
+				<id property="positionCode" column="POSITION_CODE"/>
+			</collection>
+			<collection property="processList" ofType="ProcessVO" autoMapping="true">
+				<id property="daNo" column="DA_NO"/>
+				<id property="processCodeId" column="PROCESS_CODE_ID"/>
+			</collection>
+		</collection>
+		<collection property="welfareList" ofType="AnnoWelfareVO" autoMapping="true">
+			<id property="welfareCode" column="WELFARE_CODE" />
+		</collection>
+	</resultMap>
+	<select id="selectAnno" parameterType="string" resultMap="annoMap">
+		WITH ANNODETAIL AS (
+		    SELECT D.DA_NO, D.ANNO_NO, D.DA_FD, D.DA_COUNT
+		        , D.DA_TASK, D.DA_DEPARTMENT, D.DA_CONDITION
+		        , D.DA_PREFER, D.DA_WORKDAY, D.DA_WORKTIME
+		        , D.DA_CAR_YEER, D.REGION_CODE, D.EMPLTYPE_CODE
+		        , D.JOB_CODE, D.JOB0, D.JOB1
+		        , AC.CAREER_NAME, AP.POSITION_CODE
+		        , (SELECT POSITION_NAME FROM CD_POSITION WHERE POSITION_CODE=AP.POSITION_CODE) POSITION_NAME
+		        , (SELECT REGION_NAME FROM CD_REGION WHERE CD_REGION.REGION_CODE=D.REGION_CODE) REGION_NAME
+		        , (SELECT JOB_NAME FROM CD_JOB WHERE CD_JOB.JOB_CODE=D.JOB_CODE) JOB_NAME
+		        , (SELECT EMPLTYPE_NAME FROM CD_EMPLTYPE WHERE CD_EMPLTYPE.EMPLTYPE_CODE=D.EMPLTYPE_CODE) EMPLTYPE_NAME
+		    FROM ANNO_DETAIL D LEFT OUTER JOIN ANNO_CAREER AC ON (D.DA_NO = AC.DA_NO)
+		        LEFT OUTER JOIN ANNO_POSITION AP ON (D.DA_NO = AP.DA_NO)
+		),
+		ANNOALL AS(
+		    SELECT A.ANNO_NO, A.CMP_ID, A.MEM_ID
+		        , A.ANNO_TITLE, A.ANNO_CONTENT
+		        , to_char(A.ANNO_STARTDATE, 'YYYY.MM.DD HH24:MI') ANNO_STARTDATE
+		        , to_char(A.ANNO_ENDDATE, 'YYYY.MM.DD HH24:MI') ANNO_ENDDATE
+		        , A.ANNO_HIT, A.ANNO_DATE, A.ANNO_STATE_CD, A.ANNO_WORKENV
+		        , A.ANNO_PROBATION, A.ANNO_SALARY, A.ANNO_SALARY2, INDUSTRY_CODE, INDUSTRY0, INDUSTRY1
+		        , (SELECT INDUSTRY_NAME FROM CD_INDUSTRY WHERE CD_INDUSTRY.INDUSTRY_CODE=A.INDUSTRY_CODE) INDUSTRY_NAME
+		        , A.EDU_CODE
+		        , (SELECT EDU_NAME FROM CD_EDUCATION WHERE CD_EDUCATION.EDU_CODE=A.EDU_CODE) EDU_NAME
+		        , AW.WELFARE_CODE, CW.WELFARE_NAME, CW.WELFARE_REF REF_CODE
+		        , (SELECT WELFARE_NAME FROM CD_WELFARE WHERE WELFARE_CODE = CW.WELFARE_REF) REF_NAME
+		    FROM ANNO A LEFT OUTER JOIN ANNO_WELFARE AW ON (A.ANNO_NO = AW.ANNO_NO)
+		        LEFT OUTER JOIN CD_WELFARE CW ON (AW.WELFARE_CODE = CW.WELFARE_CODE)
+		)
+		SELECT ANNOALL.*, ANNODETAIL.*
+			, COMPANY.CMP_ID, COMPANY.CMP_NO, COMPANY.CMP_NAME, COMPANY.CMP_REP_NAME, COMPANY.CMP_BSNS_NO, COMPANY.COMPANY.CMP_ADDR1, COMPANY.CMP_ADDR2
+	        , COMPANY.CMP_ZIP, COMPANY.CMP_PHONE
+	        , COMPANY.CMP_EMAIL, COMPANY.CMP_URL, to_char(COMPANY.CMP_ESTBL_DATE, 'YYYY/MM/DD') CMP_ESTBL_DATE, COMPANY.CMP_SMENP, COMPANY.CMP_EMP_NO, COMPANY.CMP_AVR_WORK
+	        , COMPANY.CMP_AVR_SALARY, COMPANY.CMP_MB_NAME, COMPANY.CMP_CHECK, <!-- COMPANY.CMP_CONTENT, --> COMPANY.CMP_LOGO
+	        , ATTACH.ATT_SAVENAME
+		FROM ANNOALL LEFT OUTER JOIN ANNODETAIL ON (ANNOALL.ANNO_NO = ANNODETAIL.ANNO_NO)
+					 LEFT OUTER JOIN COMPANY ON (ANNOALL.CMP_ID = COMPANY.CMP_ID)
+					 LEFT OUTER JOIN ATTACH ON (ANNOALL.CMP_ID = ATTACH.TBL_ID)
+		WHERE ANNOALL.ANNO_NO = #{annoNo}
+		ORDER BY DA_NO, WELFARE_CODE
+	</select>
+
+ 	<insert id="insertAnno" parameterType="AnnoVO" >
+		<selectKey order="BEFORE" resultType="string" keyProperty="annoNo">
+			SELECT 'AN' || LPAD(ANNO_SEQ.NEXTVAL,6,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ANNO (
+		        anno_no
+		        , cmp_id
+		        , mem_id
+		        , anno_title
+		        , anno_content
+
+		        , anno_startdate
+		        , anno_enddate
+		        , anno_hit
+		        , anno_date
+		        , anno_state_cd
+
+		        , anno_workenv
+		        , anno_probation
+		        , anno_salary
+		        , industry_code
+		        , edu_code
+
+		        , INDUSTRY0
+		        , INDUSTRY1
+		        , ANNO_SALARY2
+	    ) VALUES (
+	        #{annoNo,jdbcType=VARCHAR}
+	        , #{cmpId,jdbcType=VARCHAR}
+	        , #{memId,jdbcType=VARCHAR}
+	        , #{annoTitle,jdbcType=VARCHAR}
+	        , #{annoContent,jdbcType=CLOB}
+
+	        , TO_DATE(#{annoStartdate,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS')
+	        , TO_DATE(#{annoEnddate,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS')
+	        , 0
+	        , SYSDATE
+	        , #{annoStateCd,jdbcType=VARCHAR}
+
+	        , #{annoWorkenv,jdbcType=VARCHAR}
+	        , #{annoProbation,jdbcType=VARCHAR}
+	        , #{annoSalary,jdbcType=VARCHAR}
+	        , #{industryCode,jdbcType=VARCHAR}
+	        , #{eduCode,jdbcType=VARCHAR}
+
+	        , #{industry0,jdbcType=VARCHAR}
+			, #{industry1,jdbcType=VARCHAR}
+			, #{annoSalary2,jdbcType=VARCHAR}
+	    )
+	</insert>
+
+	<insert id="insertAnnoDetail" parameterType="AnnoDetailVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="daNo">
+			SELECT 'AD' || LPAD(ANDETAIL_SEQ.NEXTVAL,6,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ANNO_DETAIL (
+	        da_no
+	        , anno_no
+	        , da_fd
+	        , da_count
+	        , da_task
+
+	        , da_department
+	        , da_condition
+	        , da_prefer
+	        , da_workday
+	        , da_worktime
+
+	        , DA_CAR_YEER
+	        , region_code
+	        , empltype_code
+	        , job0
+	        , job1
+
+	        , job_code
+	    ) VALUES (
+	        #{daNo,jdbcType=VARCHAR}
+	        , #{annoNo,jdbcType=VARCHAR}
+	        , #{daFd,jdbcType=VARCHAR}
+	        , #{daCount,jdbcType=VARCHAR}
+	        , #{daTask,jdbcType=VARCHAR}
+
+	        , #{daDepartment,jdbcType=VARCHAR}
+	        , #{daCondition,jdbcType=VARCHAR}
+	        , #{daPrefer,jdbcType=VARCHAR}
+	        , #{daWorkday,jdbcType=VARCHAR}
+	        , #{daWorktime,jdbcType=VARCHAR}
+
+	        , #{daCarYeer,jdbcType=VARCHAR}
+	        , (SELECT REGION_CODE FROM CD_REGION WHERE REGION_NAME = #{regionVO.regionName,jdbcType=VARCHAR})
+	        , #{empltypeCode,jdbcType=VARCHAR}
+	        , #{job0,jdbcType=VARCHAR}
+	        , #{job1,jdbcType=VARCHAR}
+
+	        , #{jobCode,jdbcType=VARCHAR}
+	    )
+	</insert>
+
+	<insert id="insertAnnoCareer" parameterType="string">
+		INSERT INTO ANNO_CAREER (
+	        career_name, da_no
+	    ) VALUES (
+	        #{careerName,jdbcType=VARCHAR}, #{daNo,jdbcType=VARCHAR}
+	    )
+	</insert>
+
+	<insert id="insertAnnoPosition" parameterType="string">
+		INSERT INTO ANNO_POSITION (
+	        position_code, da_no
+	    ) VALUES (
+	        #{positionCode,jdbcType=VARCHAR}, #{daNo,jdbcType=VARCHAR}
+	    )
+	</insert>
+
+	<insert id="insertWelfareList" parameterType="AnnoWelfareVO">
+		INSERT INTO ANNO_WELFARE (
+	        WELfare_code, anno_no
+	    ) VALUES (
+	        #{welfareCode,jdbcType=VARCHAR}, #{annoNo,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<delete id="deleteAllWelfare" parameterType="string">
+		DELETE FROM ANNO_WELFARE WHERE ANNO_NO = #{annoNo,jdbcType=VARCHAR}
+	</delete>
+
+	<update id="updateAnno" parameterType="AnnoVO">
+		UPDATE ANNO
+		    SET
+		        ANNO_TITLE = #{annoTitle,jdbcType=VARCHAR}
+		        , ANNO_CONTENT = #{annoContent,jdbcType=CLOB}
+		        , ANNO_WORKENV = #{annoWorkenv,jdbcType=VARCHAR}
+		        , ANNO_PROBATION = #{annoProbation,jdbcType=VARCHAR}
+		        , ANNO_SALARY = #{annoSalary,jdbcType=VARCHAR}
+		        , ANNO_SALARY2 = #{annoSalary2,jdbcType=NUMERIC}
+		        , INDUSTRY0 = #{industry0,jdbcType=VARCHAR}
+		        , INDUSTRY1 = #{industry1,jdbcType=VARCHAR}
+		        , INDUSTRY_CODE = #{industryCode,jdbcType=VARCHAR}
+		        , EDU_CODE = #{eduCode,jdbcType=VARCHAR}
+		WHERE
+		    ANNO_NO = #{annoNo,jdbcType=VARCHAR}
+	</update>
+
+	<update id="updateDetailAnno" parameterType="AnnoDetailVO">
+		UPDATE ANNO_DETAIL
+		    SET
+		        DA_FD = #{daFd,jdbcType=VARCHAR}
+		        , DA_COUNT = #{daCount,jdbcType=VARCHAR}
+		        , DA_TASK = #{daTask,jdbcType=VARCHAR}
+		        , DA_DEPARTMENT = #{daDepartment,jdbcType=VARCHAR}
+		        , DA_CONDITION = #{daCondition,jdbcType=VARCHAR}
+		        , DA_PREFER = #{daPrefer,jdbcType=VARCHAR}
+		        , DA_CAR_YEER = #{daCarYeer,jdbcType=VARCHAR}
+		        , REGION_CODE = (SELECT REGION_CODE FROM CD_REGION WHERE REGION_NAME = #{regionVO.regionName,jdbcType=VARCHAR})
+		        , EMPLTYPE_CODE = #{empltypeCode,jdbcType=VARCHAR}
+		        , JOB_CODE = #{jobCode,jdbcType=VARCHAR}
+		        , JOB0 = #{job0,jdbcType=VARCHAR}
+		        , JOB1 = #{job1,jdbcType=VARCHAR}
+		WHERE
+		    DA_NO = #{daNo,jdbcType=VARCHAR}
+	</update>
+
+	<update id="deleteAnno" parameterType="string">
+		UPDATE ANNO
+	    SET ANNO_STATE_CD = 'B2'
+		WHERE ANNO_NO = #{annoNo,jdbcType=VARCHAR}
+	</update>
+
+	<update id="terminateAnno" parameterType="string">
+		UPDATE ANNO
+	    SET ANNO_STATE_CD = 'B4'
+		WHERE ANNO_NO = #{annoNo,jdbcType=VARCHAR}
+	</update>
+
+	<!-- 관심공고 -->
+	<select id="selectLikeAnno" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM LIKE_ANNO
+		WHERE ANNO_NO=#{annoNo,jdbcType=VARCHAR} AND MEM_ID=#{memId,jdbcType=VARCHAR}
+	</select>
+
+	<insert id="insertLikeAnno" parameterType="string">
+		INSERT INTO LIKE_ANNO (
+		   ANNO_NO, MEM_ID
+		) VALUES (
+		    #{annoNo,jdbcType=VARCHAR}, #{memId,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<delete id="deleteLikeAnno" parameterType="string">
+		DELETE FROM LIKE_ANNO
+		WHERE ANNO_NO = #{annoNo,jdbcType=VARCHAR}
+		AND MEM_ID = #{memId,jdbcType=VARCHAR}
+	</delete>
+
+	<!-- 관심기업 -->
+	<select id="selectLikeCmp" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM LIKE_COMPANY
+		WHERE CMP_ID=#{cmpId,jdbcType=VARCHAR} AND MEM_ID=#{memId,jdbcType=VARCHAR}
+	</select>
+
+	<insert id="insertLikeCmp" parameterType="string">
+		INSERT INTO LIKE_COMPANY (
+		   CMP_ID, MEM_ID
+		) VALUES (
+		    #{cmpId,jdbcType=VARCHAR}, #{memId,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<delete id="deleteLikeCmp" parameterType="string">
+		DELETE FROM LIKE_COMPANY
+		WHERE CMP_ID = #{cmpId,jdbcType=VARCHAR}
+		AND MEM_ID = #{memId,jdbcType=VARCHAR}
+	</delete>
+
+	<!-- 멤버 로그 추가 -->
+	<insert id="insertMemLog" parameterType="string">
+		INSERT INTO log_member (
+		    LOG_NO, MEM_ID, ANNO_NO, LOG_TIME
+		) VALUES (
+		    LOG_SEQ.NEXTVAL, #{memId,jdbcType=VARCHAR}, #{annoNo,jdbcType=VARCHAR}, systimestamp
+		)
+	</insert>
+
+	<!-- 공고추천 -->
+	<resultMap type="AnnoVO" id="recommendListMap" autoMapping="true">
+		<id property="annoNo" column="ANNO_NO"/>
+		<association property="company" javaType="CompanyVO" autoMapping="true" />
+		<collection  property="detailList" ofType="AnnoDetailVO" autoMapping="false">
+			<id property="daNo" column="DA_NO" />
+			<result property="jobName" column="JOB_NAME"/>
+			<result property="empltypeCode" column="EMPLTYPE_CODE"/>
+			<result property="empltypeName" column="EMPLTYPE_NAME"/>
+			<association property="regionVO" javaType="AnnoRegionVO" autoMapping="true"/>
+			<collection property="positionList" ofType="AnnoPositionVO" autoMapping="false">
+				<id property="positionCode" column="POSITION_CODE" />
+				<result property="positionName" column="POSITION_NAME"/>
+			</collection>
+			<collection property="careerNames" ofType="string" autoMapping="false">
+				<result column="CAREER_NAME"/>
+			</collection>
+		</collection>
+	</resultMap>
+	<select id="selectRecommend" parameterType="string" resultMap="recommendListMap">
+		<![CDATA[
+		WITH DETAILVIEW AS (
+		    SELECT AD.DA_NO, ANNO_NO, DA_FD, DA_COUNT, DA_TASK, DA_DEPARTMENT, DA_CONDITION, DA_PREFER
+		        , DA_WORKDAY, DA_WORKTIME, DA_CAR_YEER
+		        , AD.EMPLTYPE_CODE, EMPLTYPE_NAME
+		        , AD.JOB_CODE, JOB_NAME
+		        , AD.REGION_CODE, REGION_NAME
+		        , POSITION_CODE, POSITION_NAME, CAREER_NAME
+		    FROM ANNO_DETAIL AD LEFT OUTER JOIN
+		        (
+		            SELECT DA_NO, ANNO_POSITION.POSITION_CODE, POSITION_NAME
+		            FROM ANNO_POSITION INNER JOIN CD_POSITION ON (ANNO_POSITION.POSITION_CODE = CD_POSITION.POSITION_CODE)
+		        ) AP ON (AD.DA_NO = AP.DA_NO)
+		        LEFT OUTER JOIN ANNO_CAREER AC ON (AD.DA_NO = AC.DA_NO)
+		        LEFT OUTER JOIN CD_REGION CR ON (AD.REGION_CODE = CR.REGION_CODE)
+		        LEFT OUTER JOIN CD_JOB CJ ON (AD.JOB_CODE = CJ.JOB_CODE)
+		        LEFT OUTER JOIN CD_EMPLTYPE CE ON(AD.EMPLTYPE_CODE = CE.EMPLTYPE_CODE)
+		),ANNOVIEW AS(
+		    SELECT K.*, ROWNUM RNUM
+		    FROM (
+		            SELECT COUNT(L.ANNO_NO) CT, P.ANNO_NO, P.ANNO_TITLE, P.CMP_ID, P.EDU_CODE, P.INDUSTRY_CODE, P.ANNO_SALARY, P.ANNO_STATE_CD, P.ANNO_DATE
+		            FROM LOG_MEMBER L LEFT OUTER JOIN ANNO P ON(L.ANNO_NO = P.ANNO_NO)
+		            WHERE L.MEM_ID IN (SELECT DISTINCT MEM_ID FROM LOG_MEMBER WHERE ANNO_NO = 'AN000241')
+		                AND P.ANNO_STATE_CD = 'B1'
+		            GROUP BY P.ANNO_NO, P.ANNO_TITLE, P.CMP_ID, P.EDU_CODE, P.INDUSTRY_CODE, P.ANNO_SALARY, P.ANNO_STATE_CD,P.ANNO_DATE
+		            ORDER BY CT DESC
+		        ) K
+		    WHERE ROWNUM <= 5
+		), ANNOBOARD AS(
+		    SELECT  A.RNUM, A.CT, A.ANNO_NO, A.CMP_ID, A.ANNO_TITLE, A.ANNO_DATE
+		        , A.ANNO_STATE_CD, A.ANNO_SALARY, A.INDUSTRY_CODE, A.EDU_CODE
+		        , (SELECT INDUSTRY_NAME FROM CD_INDUSTRY WHERE CD_INDUSTRY.INDUSTRY_CODE = A.INDUSTRY_CODE) INDUSTRY_NAME
+		        , (SELECT EDU_NAME FROM CD_EDUCATION WHERE CD_EDUCATION.EDU_CODE = A.EDU_CODE) EDU_NAME
+		        , C.CMP_NAME
+		        , DA_NO, DA_FD, DA_COUNT, DA_TASK, DA_DEPARTMENT, DA_CONDITION, DA_PREFER
+		        , DA_WORKDAY, DA_WORKTIME, DA_CAR_YEER
+		        , EMPLTYPE_CODE, EMPLTYPE_NAME, JOB_CODE, JOB_NAME
+		        , REGION_CODE , REGION_NAME
+		        , POSITION_CODE, POSITION_NAME, CAREER_NAME
+		    FROM ANNOVIEW A LEFT OUTER JOIN DETAILVIEW D ON (A.ANNO_NO = D.ANNO_NO)
+		                    LEFT OUTER JOIN LIKE_ANNO LA ON (A.ANNO_NO = LA.ANNO_NO)
+		                    INNER JOIN COMPANY C ON (C.CMP_ID = A.CMP_ID)
+		    ORDER BY ANNO_DATE DESC
+		)
+		SELECT A.*
+		FROM(
+		    SELECT ANNOBOARD.*
+		    FROM ANNOBOARD
+		) A
+		ORDER BY RNUM
+		]]>
+	</select>
+
+	<!-- 조회수 -->
+	<update id="incrementHit" parameterType="string">
+		UPDATE ANNO
+		SET
+		ANNO_HIT = ANNO_HIT + 1
+		WHERE ANNO_NO = #{annoNo}
+	</update>
+	
+	<!--조회수 상위 15퍼센트여부  -->
+	<select id="per15Chk" resultType="string">
+		<![CDATA[
+			SELECT ANNO_NO FROM (SELECT ANNO_NO, PERCENT_RANK() OVER (ORDER BY ANNO_HIT DESC) as per_rank FROM ANNO) a
+			WHERE a.per_rank <=0.15
+		]]>
+	</select>
+
+
+	<resultMap type="AnnoVO" id="annoProcessListMap" autoMapping="true">
+		<id property="annoNo" column="ANNO_NO"/>
+		<association property="company" javaType="CompanyVO" autoMapping="true" />
+		<collection  property="detailList" ofType="AnnoDetailVO" autoMapping="true">
+			<id property="daNo" column="DA_NO" />
+			<collection property="processList" ofType="ProcessVO" autoMapping="true">
+				<id property="daNo" column="DA_NO"/>
+				<id property="processCodeId" column="PROCESS_CODE_ID"/>
+				<result property="processCodeName" column="PROCESS_CODE_NAME" />
+				<collection property="itemList" ofType="kr.or.ddit.process.vo.ItemVO" autoMapping="true">
+					<id property="daNo" column="DA_NO"/>
+					<id property="itemCodeId" column="ITEM_CODE_ID"/>
+				</collection>
+			</collection>
+		</collection>
+		<collection property="welfareList" ofType="AnnoWelfareVO" autoMapping="true">
+			<id property="welfareCode" column="WELFARE_CODE" />
+		</collection>
+	</resultMap>
+
+	<!-- 경수 -->
+	<select id="selectMyAnnoList" parameterType="String" resultMap="annoProcessListMap">
+		SELECT A.*, B.*, C.*, D.*, E.*, F.*, G.PROCESS_CODE_NAME
+		FROM ANNO A
+		INNER JOIN INCRUITER B ON A.CMP_ID = B.CMP_ID
+		INNER JOIN COMPANY F ON A.CMP_ID = F.CMP_ID
+		INNER JOIN ANNO_DETAIL C ON A.ANNO_NO = C.ANNO_NO
+		INNER JOIN ANNO_WELFARE D ON A.ANNO_NO = D.ANNO_NO
+		LEFT OUTER JOIN PROCESS E ON C.DA_NO = E.DA_NO
+		LEFT OUTER JOIN PROCESS_CODE G ON E.PROCESS_CODE_ID = G.PROCESS_CODE_ID
+		WHERE B.MEM_ID = #{memId}
+		AND ANNO_STATE_CD IN ('B1','B4')
+		ORDER BY E.PROCESS_CODE_ID
+	</select>
+
+	<select id="selectAnnoDetailProcess" parameterType="String" resultMap="annoProcessListMap">
+		SELECT A.*, B.*, C.*, D.*, E.*, F.PROCESS_CODE_NAME
+		FROM ANNO A
+		INNER JOIN ANNO_DETAIL B ON A.ANNO_NO = B.ANNO_NO
+		INNER JOIN ANNO_WELFARE C ON A.ANNO_NO = C.ANNO_NO
+		LEFT OUTER JOIN PROCESS D ON B.DA_NO = D.DA_NO
+        INNER JOIN COMPANY E ON A.CMP_ID = E.CMP_ID
+		LEFT OUTER JOIN PROCESS_CODE F ON D.PROCESS_CODE_ID = F.PROCESS_CODE_ID
+		WHERE A.ANNO_NO = #{annoNo}
+		ORDER BY D.PROCESS_CODE_ID
+	</select>
+	
+	<select id="selectLikeAnnoList" parameterType="String" resultType="AnnoVO">
+		SELECT A.ANNO_NO, A.ANNO_TITLE, A.ANNO_STATE_CD, C.ATT_SAVENAME, A.ANNO_STARTDATE, A.ANNO_ENDDATE
+		FROM ANNO A
+		INNER JOIN LIKE_ANNO B ON A.ANNO_NO = B.ANNO_NO
+		LEFT OUTER JOIN ATTACH C ON A.CMP_ID = C.TBL_ID
+		WHERE B.MEM_ID = #{memId}	
+	</select>
+	
+	<select id="selectLikeAnnoListMypage" parameterType="String" resultType="AnnoVO">
+		SELECT A.ANNO_NO, A.ANNO_TITLE, A.ANNO_STATE_CD, A.ANNO_STARTDATE, A.ANNO_ENDDATE 
+		FROM ANNO A INNER JOIN LIKE_ANNO B ON A.ANNO_NO = B.ANNO_NO 	
+		WHERE B.MEM_ID = #{memId}	
+	</select>
+
+	<select id="selectMyAnnoListSeeker" parameterType="String" resultMap="annoProcessListMap">
+		SELECT A.ANNO_NO, A.CMP_ID, A.ANNO_TITLE, A.ANNO_STARTDATE, A.ANNO_ENDDATE
+			, B.DA_NO, B.DA_FD
+			, D.PROCESS_CODE_ID, D.PROCESS_START_DATE, D.PROCESS_END_DATE
+			, E.PROCESS_CODE_NAME
+		FROM ANNO A
+		INNER JOIN ANNO_DETAIL B ON A.ANNO_NO = B.ANNO_NO
+		INNER JOIN APPLY C ON B.DA_NO = C.DA_NO
+		LEFT OUTER JOIN PROCESS D ON B.DA_NO = D.DA_NO
+		LEFT OUTER JOIN PROCESS_CODE E ON D.PROCESS_CODE_ID = E.PROCESS_CODE_ID
+		WHERE C.MEM_ID = #{memId}
+		ORDER BY E.PROCESS_CODE_ID
+	</select>
+</mapper>

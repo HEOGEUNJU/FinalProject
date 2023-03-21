@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.ExreviewDAO">
+
+
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		select count(*)
+		from exreview
+<!-- 		<include refid="searchFrag"/> -->
+	</select>
+	
+	<insert id="insertReview" parameterType="ExreviewVO">
+	<selectKey order="BEFORE" resultType="string" keyProperty="exreviewId">
+		SELECT 'EXR' || LPAD(EXREVIEW_SEQ.NEXTVAL,6,0) FROM DUAL
+	</selectKey>
+	INSERT INTO exreview (
+	    exreview_id,
+	    exreview_name,
+	    exreview_writer,
+	    exreview_content,
+	    excart_id,
+	    exreview_score
+	) VALUES (
+	 #{exreviewId,jdbcType=VARCHAR}
+	, #{exreviewName,jdbcType=VARCHAR}
+	, #{exreviewWriter,jdbcType=VARCHAR}
+	, #{exreviewContent,jdbcType=VARCHAR}
+	, #{excartId,jdbcType=VARCHAR}
+	, #{exreviewScore,jdbcType=VARCHAR}
+	)		
+	</insert>
+	<update id="updateReview" parameterType="ExreviewVO">
+		UPDATE exreview
+	    SET
+	       exreview_name = #{exreviewName,jdbcType=VARCHAR}
+	       ,exreview_writer = #{exreviewWriter,jdbcType=VARCHAR}
+	       ,exreview_date = SYSDATE
+	       ,exreview_score = #{exreviewScore,jdbcType=VARCHAR}
+	       ,exreview_content = #{exreviewContent,jdbcType=VARCHAR}
+		WHERE
+		    excart_id = #{excartId,jdbcType=VARCHAR}
+	</update>
+	
+	<select id="selectExreview" parameterType="String" resultType="ExreviewVO"> 
+	SELECT
+	exreview_id,
+    exreview_name,
+    exreview_writer,
+    exreview_pass,
+    exreview_hit,
+    exreview_score,
+    exreview_content,
+    excart_id,
+    exprod_name,
+ 	exprod_id
+	FROM
+    mem_excart_exprod_exreview
+    WHERE EXREVIEW_ID = #{exreviewId,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selectReviewList" parameterType="PagingVO" resultType="ExreviewVO">
+	WITH ORDEREDEVENT AS (
+	SELECT
+		exreview_id,
+	    exreview_name,
+	    exreview_writer,
+	    exreview_pass,
+	    exreview_hit,
+	    exreview_score,
+	    exreview_content,
+	    excart_id,
+	    expert_id,
+	    exprod_name,
+	    exprod_id,
+	    excart_price,
+	    (SELECT C.EXFIELD_NAME
+		    FROM EXFIELD C
+		    WHERE C.EXFIELD_ID = B.exfield_id) AS EXFIELD_NAME,
+	    (SELECT D.EXJOB_NAME
+		    FROM EXJOB D
+		    WHERE D.EXJOB_ID = B.EXJOB_ID) AS EXJOB_NAME,
+		(select F.MEM_NAME
+		    FROM MEMBER F
+		    WHERE F.MEM_ID = B.EXPERT_ID) AS EXPERT_NAME
+		,E.ATT_SAVENAME 
+	FROM
+    	mem_excart_expert_exreview B left outer join ATTACH e on b.expert_id = E.TBL_ID
+		ORDER BY EXREVIEW_ID DESC
+	)
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+		)A
+	WHERE RNUM BETWEEN #{startRow}	AND #{endRow}
+	</select>
+	<!-- 마이페이지 리뷰 조회 -->
+	<select id="selectReviewMypageList" parameterType="String" resultType="ExreviewVO">
+		SELECT
+		    mem_id,
+		    mem_name,
+		    exprod_id,
+		    exprod_name,
+		    excart_id,
+		    EXREVIEW_NAME,
+		    EXREVIEW_DATE
+		FROM
+		    mem_excart_expert_exreview
+		where expert_id = #{memId}
+	</select>
+</mapper>

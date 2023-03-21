@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.help.dao.AskDAO">
+
+	<select id="selectAsk" parameterType="String" resultType="kr.or.ddit.help.vo.AskVO">
+		SELECT ASK_NO,
+			   MEM_ID,
+			   ASK_CATE,
+			   ASK_TITLE,
+			   ASK_CONTENT,
+			   TO_CHAR(ASK_DATE,'YYYY-MM-DD')ASK_DATE,
+			   REF_CONTENT,
+			   ASK_TYPE,
+			   ASK_STATUS,
+			   TO_CHAR(REF_DATE,'YYYY-MM-DD')REF_DATE
+		  FROM ASK
+		 WHERE ASK_NO = #{askNo}
+	</select>
+
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		  FROM ASK
+	</select>
+
+	<select id="selectAskList" parameterType="PagingVO" resultType="kr.or.ddit.help.vo.AskVO">
+		  WITH ORDEREDASK AS(
+		SELECT ASK_NO,
+			   MEM_ID,
+			   ASK_CATE,
+			   ASK_TITLE,
+			   TO_CHAR(ASK_DATE,'YYYY-MM-DD')ASK_DATE,
+			   REF_CONTENT,
+			   ASK_TYPE,
+			   ASK_STATUS,
+			   TO_CHAR(REF_DATE,'YYYY-MM-DD')REF_DATE
+		  FROM ASK
+		 ORDER BY ASK_NO
+	  ) SELECT A.*
+	      FROM (
+	    	  SELECT ROWNUM RNUM, ORDEREDASK.*
+	    	    FROM ORDEREDASK
+	      ) A
+	    <where>
+	    	<if test="_parameter neq null">
+	    		RNUM BETWEEN #{startRow} AND #{endRow}
+	    	</if>
+	    </where>
+	       AND MEM_ID = #{memId}
+	</select>
+
+	<insert id="insertAsk" parameterType="AskVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="askNo">
+			SELECT 'ASK' || LPAD(ASK_SEQ.NEXTVAL, 6, 0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ASK(
+			ASK_NO
+			, MEM_ID
+			, ASK_CATE
+			, ASK_TITLE
+			, ASK_CONTENT
+			, ASK_DATE
+			, REF_CONTENT
+			, ASK_TYPE
+			, ASK_STATUS
+			, REF_DATE
+		)VALUES(
+			#{askNo,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{askCate,jdbcType=VARCHAR}
+			, #{askTitle,jdbcType=VARCHAR}
+			, #{askContent,jdbcType=CLOB}
+			, SYSDATE
+			, #{refContent,jdbcType=VARCHAR}
+			, #{askType,jdbcType=VARCHAR}
+			, #{askStatus,jdbcType=VARCHAR}
+			, SYSDATE
+		)
+	</insert>
+
+	<delete id="deleteAsk" parameterType="AskVO">
+		UPDATE ASK
+		   SET ASK_DEL_DATE = SYSDATE
+		 WHERE ASK_NO = #{askNo, jdbcType=VARCHAR}
+	</delete>
+
+	<update id="updateRef" parameterType="AskVO">
+		UPDATE ASK
+		SET REF_CONTENT = #{refContent, jdbcType=VARCHAR},
+			REF_DATE = SYSDATE
+		WHERE ASK_NO = #{askNo, jdbcType=VARCHAR}
+	</update>
+	
+	
+	
+	<!-- 문의 전체 리스트(시스템 관리) -->
+	<select id="selectAllList" parameterType="PagingVO" resultType="AskVO">
+		  WITH ORDEREDASK AS(
+		SELECT ASK_NO,
+			   MEM_ID,
+			   ASK_CATE,
+			   ASK_TITLE,
+			   TO_CHAR(ASK_DATE,'YYYY-MM-DD')ASK_DATE,
+			   REF_CONTENT,
+			   ASK_TYPE,
+			   ASK_STATUS,
+			   TO_CHAR(REF_DATE,'YYYY-MM-DD')REF_DATE
+		  FROM ASK
+		 ORDER BY ASK_NO
+	  ) SELECT A.*
+	      FROM (
+	    	  SELECT ROWNUM RNUM, ORDEREDASK.*
+	    	    FROM ORDEREDASK
+	      ) A
+	    <where>
+	    	<if test="_parameter neq null">
+	    		RNUM BETWEEN #{startRow} AND #{endRow}
+	    	</if>
+	    </where>
+	</select>
+	
+	
+	
+</mapper>
+

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.apply.dao.ApplyDAO">
+	
+	<resultMap type="ApplyVO" id="applyMap" autoMapping="true">
+		<id property="applySn" column="APPLY_SN"/>
+		<association property="resume" javaType="ResumeVO" autoMapping="true"/>
+		<association property="detail" javaType="AnnoDetailVO" autoMapping="true" />
+		<association property="anno" javaType="AnnoVO" autoMapping="true" />
+		<association property="company" javaType="CompanyVO" autoMapping="true"/>
+		<association property="process" javaType="ProcessVO" autoMapping="true"/>
+		<association property="myintro" javaType="MyintroVO" autoMapping="true"></association>
+	</resultMap>
+	
+	<select id="selectApplyList" parameterType="String" resultMap="applyMap">
+		SELECT A.*, B.*, C.*, D.*, E.*, F.PROCESS_CODE_NAME, G.*
+		FROM APPLY A
+		INNER JOIN RESUME B ON A.RESUME_SN = B.RESUME_SN
+		INNER JOIN ANNO_DETAIL C ON A.DA_NO = C.DA_NO
+		INNER JOIN ANNO D ON C.ANNO_NO = D.ANNO_NO
+		INNER JOIN COMPANY E ON D.CMP_ID = E.CMP_ID
+		INNER JOIN PROCESS_CODE F ON A.PROCESS_CODE_ID = F.PROCESS_CODE_ID
+		INNER JOIN MYINTRO G ON A.MYINTRO_SN = G.MYINTRO_SN
+		WHERE A.MEM_ID = #{memId}
+		AND A.APPLY_DELETE_DATE IS NULL
+	</select>
+	
+	<select id="selectApply" parameterType="String" resultMap="applyMap">
+		SELECT A.*, B.*, C.*, D.*, E.*, F.PROCESS_CODE_NAME, G.*
+		FROM APPLY A
+		INNER JOIN RESUME B ON A.RESUME_SN = B.RESUME_SN
+		INNER JOIN ANNO_DETAIL C ON A.DA_NO = C.DA_NO
+		INNER JOIN ANNO D ON C.ANNO_NO = D.ANNO_NO
+		INNER JOIN COMPANY E ON D.CMP_ID = E.CMP_ID
+		INNER JOIN PROCESS_CODE F ON A.PROCESS_CODE_ID = F.PROCESS_CODE_ID
+		INNER JOIN MYINTRO G ON A.MYINTRO_SN = G.MYINTRO_SN
+		WHERE A.APPLY_SN = #{applySn}
+
+	</select>
+	
+	<insert id="insertApply" parameterType="ApplyVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="applySn">
+			SELECT 'APL'||LPAD(APPLY_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO APPLY (
+		    APPLY_SN
+		    , ANNO_NO
+		    , DA_NO
+		    , MEM_ID
+		    , RESUME_SN
+		    , MYINTRO_SN
+		    , PROCESS_CODE_ID
+		    , APPLY_DATE
+		) VALUES (
+		    #{applySn,jdbcType=VARCHAR}
+		    , #{annoNo, jdbcType=VARCHAR}
+		    , #{daNo,jdbcType=VARCHAR}
+		    , #{memId,jdbcType=VARCHAR}
+		    , #{resumeSn,jdbcType=VARCHAR}
+		    , #{myintroSn,jdbcType=VARCHAR}
+		    , 'PRC01'
+		    , SYSDATE
+		)
+	</insert>
+	
+	<insert id="insertScore" parameterType="String">
+		INSERT ALL
+			INTO SCORE_RESUME (APPLY_SN , INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+			INTO SCORE_INTRO (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+			INTO SCORE_TEST (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')		
+			INTO SCORE_COMP (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+			INTO SCORE_DISCUSS (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+			INTO SCORE_PRACTICE (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+			INTO SCORE_INTERN (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')											
+			INTO SCORE_INDEPTH (APPLY_SN, INCRUITER_ID) VALUES (#{applySn}, 'asdf')
+		SELECT * FROM DUAL
+	</insert>
+	
+	<update id="updateApply" parameterType="ApplyVO">
+		UPDATE APPLY
+			SET
+				DA_NO = #{daNo,jdbcType=VARCHAR}
+				, RESUME_SN = #{resumeSn,jdbcType=VARCHAR}
+				, MYINTRO_SN = #{myintroSn,jdbcType=VARCHAR}
+				, APPLY_UPDATE_DATE = SYSDATE
+		WHERE
+			APPLY_SN = #{applySn,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteApply" parameterType="String">
+		UPDATE APPLY
+			SET
+				APPLY_DELETE_DATE = SYSDATE
+		WHERE
+			APPLY_SN = #{applySn,jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteScore" parameterType="hashMap">
+			DELETE FROM ${process}
+			WHERE
+			APPLY_SN = #{applySn, jdbcType=VARCHAR}
+	</delete>
+	
+	<resultMap type="ApplyVO" id="applicant" autoMapping="true">
+		<id property="applySn" column="APPLY_SN"/>
+		<association property="resume" javaType="ResumeVO" autoMapping="true"/>
+		<association property="scoreResume" javaType="kr.or.ddit.apply.vo.ScoreResumeVO" autoMapping="true"/>
+		<association property="scoreIntro" javaType="kr.or.ddit.apply.vo.ScoreIntroVO" autoMapping="true"/>
+		<association property="scoreTest" javaType="kr.or.ddit.apply.vo.ScoreTestVO" autoMapping="true"/>
+		<association property="scoreComp" javaType="kr.or.ddit.apply.vo.ScoreCompVO" autoMapping="true"/>
+		<association property="scoreDiscuss" javaType="kr.or.ddit.apply.vo.ScoreDiscussVO" autoMapping="true"/>
+		<association property="scorePractice" javaType="kr.or.ddit.apply.vo.ScorePracticeVO" autoMapping="true"/>
+		<association property="scoreIntern" javaType="kr.or.ddit.apply.vo.ScoreInternVO" autoMapping="true"/>
+		<association property="scoreIndepth" javaType="kr.or.ddit.apply.vo.ScoreIndepthVO" autoMapping="true"/>
+	</resultMap>
+	
+	<select id="selectApplicant" parameterType="hashMap" resultMap="applicant">
+		SELECT
+		        A.APPLY_SN, A.RESUME_SN, A.MYINTRO_SN, A.APPLY_DATE, A.APPLY_UPDATE_DATE, A.APPLY_RESULT, A.PROCESS_CODE_ID
+		        , B.MEM_ID, B. RESUME_NAME, B.RESUME_GENDER, B.RESUME_ADDR1, B.RESUME_EMAIL, B.RESUME_TEL, B.RESUME_TITLE
+				, C.ITM001, C.ITM002, C.ITM003, C.ITM004, C.ITM005, C.ITM006, C.ITM007, C.ITM008, C.ITM009, C.ITM010, C.ITM011, C.ITM012, C.RESUME_TOTAL, C.RESUME_SCORE_DATE, C.INCRUITER_ID
+				, D.ITM013, D.ITM014, D.ITM015, D.ITM016, D.ITM017, D.ITM018, D.ITM019, D.ITM020, D.ITM021, D.ITM022, D.ITM023, D.ITM024, D.ITM025, D.ITM026, D.ITM027, D.ITM028, D.INTRO_TOTAL, D.INTRO_SCORE_DATE, D.INCRUITER_ID
+				, E.ITM029, E.ITM030, E.ITM031, E.ITM032, E.ITM033, E.ITM034, E.ITM035, E.ITM036, E.TEST_TOTAL, E.TEST_SCORE_DATE, E.INCRUITER_ID		
+				, F.ITM037, F.ITM038, F.ITM039, F.ITM040, F.ITM041, F.ITM042, F.ITM043, F.ITM044, F.ITM045, F.ITM046, F.ITM047, F.ITM048, F.ITM049, F.ITM050, F.COMPETE_TOTAL, F.COMPETE_SCORE_DATE, F.INCRUITER_ID
+				, G.ITM051, G.ITM052, G.ITM053, G.ITM054, G.ITM055, G.ITM056, G.ITM057, G.ITM058, G.ITM059, G.DISCUSS_TOTAL, G.DISCUSS_SCORE_DATE, G.INCRUITER_ID
+				, H.ITM060, H.ITM061, H.ITM062, H.ITM063, H.ITM064, H.ITM065, H.ITM066, H.ITM067, H.ITM068, H.PRACTICE_TOTAL, H.PRACTICE_SCORE_DATE, H.INCRUITER_ID
+				, I.ITM069, I.ITM070, I.ITM071, I.ITM072, I.ITM073, I.ITM074, I.ITM075, I.ITM076, I.ITM077, I.ITM078, I.ITM079, I.ITM080, I.ITM081, I.ITM082, I.ITM083, I.ITM084, I.ITM085, I.INTERN_TOTAL, I.INTERN_SCORE_DATE, I.INCRUITER_ID
+				, J.ITM086, J.ITM087, J.ITM088, J.ITM089, J.ITM090, J.ITM091, J.ITM092, J.ITM093, J.ITM094, J.ITM095, J.ITM096, J.ITM097, J.ITM098, J.ITM099, J.ITM100, J.ITM101, J.ITM102, J.ITM103, J.ITM104, J.ITM105, J.ITM106, J.ITM107, J.INDEPTH_TOTAL, J.INDEPTH_SCORE_DATE, J.INCRUITER_ID
+		FROM APPLY A
+		INNER JOIN RESUME B ON A.RESUME_SN = B.RESUME_SN
+		LEFT OUTER JOIN SCORE_RESUME C ON A.APPLY_SN = C.APPLY_SN
+		LEFT OUTER JOIN SCORE_INTRO D ON A.APPLY_SN = D.APPLY_SN
+		LEFT OUTER JOIN SCORE_TEST E ON A.APPLY_SN = E.APPLY_SN
+		LEFT OUTER JOIN SCORE_COMP F ON A.APPLY_SN = F.APPLY_SN
+		LEFT OUTER JOIN SCORE_DISCUSS G ON A.APPLY_SN = G.APPLY_SN
+		LEFT OUTER JOIN SCORE_PRACTICE H ON A.APPLY_SN = H.APPLY_SN
+		LEFT OUTER JOIN SCORE_INTERN I ON A.APPLY_SN = I.APPLY_SN
+		LEFT OUTER JOIN SCORE_INDEPTH J ON A.APPLY_SN = J.APPLY_SN
+		WHERE A.DA_NO = #{daNo}
+		<!-- AND A.PROCESS_CODE_ID = #{processCodeId} -->
+		AND A.APPLY_DELETE_DATE IS NULL
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(applySn)">
+		AND A.APPLY_SN = #{applySn}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(finalResult)">
+		AND PROCESS_CODE_ID = 'PRC08'
+		AND APPLY_RESULT = '최종합격'
+		</if>
+	</select>
+	
+	<update id="updateScore" parameterType="hashMap">
+		UPDATE ${table}
+			SET
+				${itemCodeId} = #{score}
+<!-- 				, ${total} = #{totalScore} -->
+		WHERE APPLY_SN = #{applySn}
+	</update>
+	
+	<update id="updateScoreZero" parameterType="hashMap">
+		UPDATE ${table}
+			SET
+				${itemCodeId} = 0
+		WHERE APPLY_SN = #{applySn}
+	</update>
+	
+	<select id="selectApplySnList" parameterType="String" resultType="String">
+		SELECT APPLY_SN
+		FROM APPLY
+		WHERE DA_NO = #{daNo}
+	</select>
+	
+	<update id="updateResult" parameterType="ApplyVO">
+		UPDATE APPLY
+			SET
+				APPLY_RESULT = #{applyResult}
+				, PROCESS_CODE_ID = #{processCodeId}
+		WHERE APPLY_SN = #{applySn}
+	</update>
+</mapper>

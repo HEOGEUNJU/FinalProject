@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.selfpr.dao.TodaySeeDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2.28.  윤호연 		  최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+
+	<!-- 오늘 본 인재 로그 저장 및 24시간 내 확인
+	TodaySeeVO(todayNo=0, prNo=32, memId=abcabc001, TODAY_DATE=null, TODAY_EDATE=null)
+	 -->
+	<insert id="insertTodaySee" parameterType="TodaySeeVO">
+		INSERT
+		INTO TODAYSEE(
+			TODAY_NO, PR_NO, MEM_ID, TODAY_DATE, TODAY_EDATE
+		)VALUES(
+		 	TODAYSEE_SEQ.NEXTVAL, 
+		 	#{prNo,jdbcType=NUMERIC}, 
+		 	#{memId,jdbcType=VARCHAR},
+		 	SYSDATE,
+		 	SYSDATE+1
+<!-- 		 	TO_DATE(SYSDATE,'YYYY-MM-DD HH24:MI:SS'),  -->
+<!-- 		 	TO_DATE(SYSDATE+1,'YYYY-MM-DD HH24:MI:SS') -->
+		)
+	</insert>
+	
+	<select id="checkTodaySee" parameterType="TodaySeeVO" resultType="int">
+	<!-- 이미 오늘 봤는지 확인하는 쿼리 -->
+		SELECT COUNT(*) CNT
+		FROM   TODAYSEE
+		WHERE  PR_NO = #{prNo}
+		  AND MEM_ID = #{memId}
+		  AND TO_CHAR(TODAY_DATE,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+<!-- 		  AND (SYSDATE BETWEEN TODAY_DATE AND TODAY_EDATE)	 -->
+	</select>
+	
+	<select id="selectListTodaySee" parameterType="PagingVO" resultType="TodaySeeVO">
+	WITH ORDERTODAYlIST AS(
+		SELECT A.TODAY_NO, A.PR_NO, A.MEM_ID, A.TODAY_DATE, A.TODAY_EDATE,
+		       B.PR_NAME, B.PR_ANNUAL, B.PR_WANTMN, B.PR_WANTJOB, B.REGION_CODE, B.INDUSTRY_CODE, B.PR_WANTTYPE,
+		       C.MEM_NAME,
+		       D.REGION_NAME,
+		       E.INDUSTRY_NAME,
+		       F.ATT_SAVENAME
+		FROM TODAYSEE A
+		INNER JOIN PR B ON (A.PR_NO = B.PR_NO)
+		INNER JOIN MEMBER C ON (B.MEM_ID = C.MEM_ID)
+		INNER JOIN CD_REGION D ON (B.REGION_CODE = D.REGION_CODE)
+		INNER JOIN CD_INDUSTRY E ON (B.INDUSTRY_CODE = E.INDUSTRY_CODE)
+		LEFT OUTER JOIN ATTACH F ON C.MEM_ID = F.TBL_ID
+		WHERE A.MEM_ID = #{memId}
+		  AND (SYSDATE BETWEEN A.TODAY_DATE AND A.TODAY_EDATE)
+	)
+	SELECT A.*
+		FROM (
+			SELECT ROWNUM RNUM, ORDERTODAYlIST.*
+			FROM ORDERTODAYlIST
+		) A
+	WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM TODAYSEE
+	</select>
+	
+	
+</mapper>

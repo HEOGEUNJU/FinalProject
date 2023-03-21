@@ -1,0 +1,208 @@
+/* 리스트 */
+.courses-container {
+	position: relative;
+	width: 100%;
+/* 	left: -5%; */
+/* 	display: inline-block; */
+}
+
+.course {
+	background-color: #fff;
+	border-radius: 10px;
+	box-shadow: 0 3px 6px rgb(0 0 0 / 16%), 0 3px 6px rgb(0 0 0 / 23%);
+	display: flex;
+	max-width: 100%;
+	min-height: 350px;
+	height: 100%;
+	margin: 20px;
+	margin-bottom: 80px;
+	overflow: hidden;
+}
+
+.course h6 {
+	opacity: 0.6;
+	margin: 0;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.course h2 {
+	word-break: keep-all;
+	letter-spacing: 1px;
+	margin: 10px 0;
+}
+	
+.course-preview {
+	background-color: #0D6EFD;
+	color: #fff;
+	padding: 30px;
+/* 	min-width: 300px; */
+/* 	max-width: 30%; */
+	width: 30%;
+	min-height: 350px;
+	height: 100%;
+}
+
+.course-preview a {
+	color: #fff;
+	display: inline-block;
+	font-size: 12px;
+	opacity: 0.6;
+/* 	margin-top: 190px; */
+	text-decoration: none;
+	position: relative;
+	top: 70%;
+}
+
+.course-info {
+	padding: 30px;
+	position: relative;
+	width: 100%;
+	min-height: 350px;
+	height: 100%;
+	overflow: auto;
+}
+
+.progress-container {
+	position: absolute;
+	top: 30px;
+	right: 30px;
+	text-align: right;
+	width: 400px;
+	height: 50px;
+}
+
+.progress {
+	background-color: #ddd;
+	border-radius: 5px;
+	height: 7.5px;
+	width: 100%;
+	margin-bottom: 10px;
+}
+
+.progressAfter {
+	border-radius: 3px;
+	background-color: #0D6EFD;
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 7.5px;
+}
+
+.progress-text {
+	font-size: 0.8rem;
+	opacity: 0.6;
+	letter-spacing: 2.5px;
+}
+
+.listBtn {
+	background-color: #0D6EFD;
+	border: 0;
+	border-radius: 50px;
+	box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
+	color: #fff;
+	font-size: 16px;
+	padding: 12px 20px;
+	position: absolute;
+/* 	bottom: 0px; */
+	right: 30px;
+	letter-spacing: 1px;
+}
+
+/* 트리구조 */
+.tree-container {
+  position: relative;
+  display: block;
+  height: auto;
+/*   margin-left: 100px; */
+/*   margin-top: 75px; */
+/*   padding: 25px; */
+/*   width: 70%; */
+/*   box-shadow: 0 1px 2px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.23); */
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+details {
+  position: relative;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  transition: all 0.1s ease;
+/*   margin-bottom: 25px; */
+}
+details ::-webkit-details-marker {
+  display: none;
+}
+details > summary {
+  position: relative;
+/*   height: 100px; */
+  color: black;
+}
+details > summary:before {
+/*   content: "⊞"; */
+  color: #eee;
+  font-size: 0.5em;
+  margin-right: 0.5em;
+}
+details[open] > summary {
+  background: darkgrey;
+  color: #eee;
+
+}
+details[open] > summary:before {
+/*   content: "⊟"; */
+  color: #ccc;
+  
+}
+
+.folder {
+  margin: 0 0 0.5em 0.86em;
+  padding: 0.5em 0em 0.5em 1.5em;
+  border-left: 0.1em #ccc dotted;
+  border-bottom: 0.1em #ccc dotted;
+}
+.folder p {
+  margin: 0;
+}
+
+details[open] {
+  height: auto;
+  max-height: 99em !important;
+  transition: all 2s ease;
+}
+
+details:not([open]) .folder {
+  height: 0px !important;
+  transition: all 2s ease;
+  
+}
+.pf {
+ 	font-size: 24px; 
+}
+.radiuss{
+	width: 75%;
+	height: auto;
+	border : 1px solid #eaedf4;
+	border-radius: 12px;
+	padding: 80px 10px 100px 10px;
+	margin-top: 2%;
+	margin-left: 1%;
+	margin-bottom: 2%;
+	display: inline-block;
+}
+.rightRemote{
+	position: absolute;
+	top: 250px;
+	width: 22%;
+	min-height: 500px;
+	height: auto;
+	border : 1px solid #eaedf4;
+	border-radius: 12px;
+	padding: 80px 10px 100px 10px;
+	margin-top: 2%;
+	margin-left: 1%;
+	margin-bottom: 2%;
+	margin-right: 1%;
+	display: inline-block;
+}

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.ResumeDAO">
+		
+		<select id="selectResumeList" parameterType="String" resultType="ResumeVO">
+			SELECT *
+			FROM RESUME
+			WHERE MEM_ID = #{memId}
+			AND RESUME_DELETE_DATE IS NULL		
+		</select>
+
+		<select id="selectResume" parameterType="String" resultType="ResumeVO">
+			SELECT *
+			FROM RESUME
+			WHERE RESUME_SN = #{resumeSn}
+			AND RESUME_DELETE_DATE IS NULL
+		</select>
+		
+		<insert id="insertResume" parameterType="ResumeVO">
+			<selectKey order="BEFORE" resultType="String" keyProperty="resumeSn">
+				SELECT 'RSM'||LPAD(RESUME_SEQ.NEXTVAL, 6, '0')
+				FROM DUAL
+			</selectKey>
+			INSERT INTO RESUME (
+			    RESUME_SN
+			    , MEM_ID
+			    , RESUME_INSERT_DATE
+			    , RESUME_NAME
+			    , RESUME_GENDER
+			    , RESUME_ADDR1
+			    , RESUME_EMAIL
+			    , RESUME_TEL
+			    , RESUME_TITLE
+			) VALUES (
+				#{resumeSn, jdbcType=VARCHAR}
+				, #{memId, jdbcType=VARCHAR}
+				, SYSDATE
+				, #{resumeName, jdbcType=VARCHAR}
+				, #{resumeGender, jdbcType=VARCHAR}
+				, #{resumeAddr1, jdbcType=VARCHAR}
+				, #{resumeEmail, jdbcType=VARCHAR}
+				, #{resumeTel, jdbcType=VARCHAR}
+				, #{resumeTitle, jdbcType=VARCHAR}
+			)
+		</insert>
+		
+		<update id="updateResume" parameterType="ResumeVO">
+			update resume
+				set
+				    RESUME_NAME = #{resumeName, jdbcType=VARCHAR}
+				    , RESUME_GENDER = #{resumeGender, jdbcType=VARCHAR}
+				    , RESUME_ADDR1 = #{resumeAddr1, jdbcType=VARCHAR}
+				    , RESUME_EMAIL = #{resumeEmail, jdbcType=VARCHAR}
+				    , RESUME_TEL = #{resumeTel, jdbcType=VARCHAR}
+				    , RESUME_TITLE = #{resumeTitle, jdbcType=VARCHAR}
+			WHERE RESUME_SN = #{resumeSn}
+		</update>
+		
+		<delete id="deleteResume" parameterType="String">
+			update resume
+				set
+					RESUME_DELETE_DATE = SYSDATE
+			WHERE RESUME_SN = #{resumeSn}
+		</delete>
+
+		<select id="selectItemList" parameterType="String" resultType="ResumeItemVO">
+			SELECT *
+			FROM RESUME_ITEM
+			WHERE RESUME_SN = #{resumeSn}
+		</select>
+		
+		<insert id="insertItem" parameterType="ResumeItemVO">
+			INSERT INTO RESUME_ITEM (
+				RESUME_SN
+				, RESUME_ITEM_SN
+			) VALUES (
+				#{resumeSn}
+				, #{resumeItemSn}
+			)
+		</insert>
+		
+		<insert id="insertItemList" parameterType="ResumeVO">
+			INSERT ALL
+				<foreach collection="itemList" item="item" index="idx">
+				INTO RESUME_ITEM (
+					RESUME_SN
+					, RESUME_ITEM_SN
+				) VALUES (
+					#{item.resumeSn}
+					, #{item.resumeItemSn}
+				)
+				</foreach>
+				
+			SELECT * FROM DUAL
+		</insert>
+		
+		<delete id="deleteItem" parameterType="String">
+			DELETE FROM RESUME_ITEM
+			WHERE RESUME_ITEM_SN = #{resumeItemSn}
+		</delete>
+		
+		<delete id="deleteItemInResume" parameterType="ResumeItemVO">
+			DELETE FROM RESUME_ITEM
+			WHERE RESUME_SN = #{resumeSn} 
+			AND RESUME_ITEM_SN = #{resumeItemSn}
+		</delete>
+		
+</mapper>
+

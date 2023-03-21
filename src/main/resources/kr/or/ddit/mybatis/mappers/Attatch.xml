@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.AttachDAO">
+<!-- 	<insert id="insertAttatches" parameterType="">
+       INSERT ALL보다 먼저 실행되어야함 
+       결과 값의 형태 : int
+        초기값 keyProperty : attach테이블에 현재 두개의 파일이 들어가있다고 가정한다면 startAttNo에 3부터 세팅됨 
+      <selectKey order="BEFORE" resultType="int" keyProperty="startAttNo">
+         SELECT NVL(MAX(ATT_NO),0)+1
+         FROM ATTATCH
+      </selectKey>
+      INSERT ALL
+      <foreach collection="attatchList" item="attatch" index="idx">
+         INTO ATTATCH(
+         ATT_NO
+         , BO_NO
+         , ATT_FILENAME
+         , ATT_SAVENAME
+         , ATT_MIME
+         , ATT_FILESIZE
+         , ATT_FANCYSIZE
+         , ATT_DOWNLOAD
+      )VALUES(
+          #{startAttNo}+#{idx}
+         , #{boNo,jdbcType=NUMERIC}
+         , #{attatch.attFilename,jdbcType=VARCHAR}
+         , #{attatch.attSavename,jdbcType=VARCHAR}
+         , #{attatch.attMime,jdbcType=VARCHAR}
+         , #{attatch.attFilesize,jdbcType=NUMERIC}
+         , #{attatch.attFancysize,jdbcType=VARCHAR}
+         , 0
+      )
+      </foreach>
+      
+      SELECT * FROM DUAL
+   </insert> -->
+   
+   <insert id="insertAttatches" parameterType="kr.or.ddit.vo.CommonsAttachVO">
+	   <selectKey order="BEFORE" resultType="int" keyProperty="startAttNo">
+	    SELECT NVL(MAX(ATT_NO),0)+1
+	    FROM ATTACH
+	    WHERE TBL_ID = #{tblId,jdbcType=VARCHAR}
+	    </selectKey>
+    	  INSERT ALL
+      	<foreach collection="attatchList" item="attach" index="idx">
+		INTO attach (
+		    tbl_id,
+		    att_no,
+		    att_savename,
+		    att_stre_cours,
+		    att_filename,
+		    att_mime,
+		    att_filesize,
+		    att_fancysize
+		) VALUES (
+		    #{tblId,jdbcType=VARCHAR}
+		    , #{startAttNo}+#{idx}
+		    , #{attach.attSavename,jdbcType=VARCHAR}
+		    , #{attach.attStreCours,jdbcType=VARCHAR}
+		    , #{attach.attFilename,jdbcType=VARCHAR}
+		    , #{attach.attMime,jdbcType=VARCHAR}
+		    , #{attach.attFilesize,jdbcType=NUMERIC}
+		    , #{attach.attFancysize,jdbcType=VARCHAR}
+		)      
+ 	    </foreach>
+
+      	SELECT * FROM DUAL
+
+   </insert>
+   
+   <insert id="insertAttach" parameterType="AttachVO">
+    	  INSERT INTO attach (
+		    tbl_id,
+		    att_no,
+		    att_savename,
+		    att_stre_cours,
+		    att_filename,
+		    att_mime,
+		    att_filesize,
+		    att_fancysize
+		) VALUES (
+		    #{tblId,jdbcType=VARCHAR}
+		    , 1
+		    , #{attSavename,jdbcType=VARCHAR}
+		    , #{attStreCours,jdbcType=VARCHAR}
+		    , #{attFilename,jdbcType=VARCHAR}
+		    , #{attMime,jdbcType=VARCHAR}
+		    , #{attFilesize,jdbcType=NUMERIC}
+		    , #{attFancysize,jdbcType=VARCHAR}
+		)      
+   </insert>
+
+
+
+
+   <select id="selectAttatchList" parameterType="String" resultType="AttachVO">
+		SELECT
+		    tbl_id,
+		    att_no,
+		    att_stre_cours,
+		    att_savename,
+		    att_filename,
+		    att_mime,
+		    att_filesize,
+		    att_fancysize,
+		    att_download
+		FROM
+		    attach
+		WHERE tbl_id = #{tblId}
+   </select>
+
+
+   <delete id="deleteAttatchs" parameterType="kr.or.ddit.vo.CommonsAttachVO">
+   		DELETE FROM ATTACH
+   		WHERE tbl_id IN 
+   		<foreach collection="delAttNos" item="attNo" open="(" close=")" separator=",">
+   			#{att_no}
+   		</foreach>
+   </delete> 
+   
+   <delete id="deleteAttatch" parameterType="String">
+    DELETE FROM ATTACH
+   		WHERE tbl_id = #{tblId}  
+   </delete>
+</mapper>

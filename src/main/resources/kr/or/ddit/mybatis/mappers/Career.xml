@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.CareerDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+	<select id="selectCareerList" parameterType="String" resultType="CareerVO">
+		SELECT CAREER_SN, CAREER_COMPANY, CAREER_TASK, CAREER_CATEGORY, CAREER_INSERT_DATE
+		FROM CAREER
+		WHERE MEM_ID = #{memId}
+		AND CAREER_DELETE_DATE IS NULL
+		
+	</select>
+	
+	<select id="selectCareer" parameterType="String" resultType="CareerVO">
+		SELECT *
+		FROM CAREER
+		WHERE CAREER_SN = #{careerSn}
+		AND CAREER_DELETE_DATE IS NULL		
+	</select>
+	
+	<insert id="insertCareer" parameterType="CareerVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="careerSn">
+			SELECT 'CRR'||LPAD(CAREER_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO CAREER (
+			CAREER_SN
+			, MEM_ID
+			, CAREER_CATEGORY
+			, CAREER_COMPANY
+			, CAREER_TASK
+			, CAREER_CLASS
+			, CAREER_JOIN
+			, CAREER_RESIGN
+			, CAREER_SALARY
+			, CAREER_ANNUAL
+			, CAREER_INSERT_DATE
+		) VALUES (
+		    #{careerSn,jdbcType=VARCHAR}
+		    , #{memId,jdbcType=VARCHAR}
+		    , #{careerCategory,jdbcType=VARCHAR}
+		    , #{careerCompany,jdbcType=VARCHAR}
+		    , #{careerTask,jdbcType=VARCHAR}
+		    , #{careerClass,jdbcType=VARCHAR}
+		    , #{careerJoin,jdbcType=DATE}
+		    , #{careerResign,jdbcType=DATE}
+		    , #{careerSalary,jdbcType=VARCHAR}
+		    , #{careerAnnual,jdbcType=NUMERIC}
+		    , SYSDATE
+		)
+	</insert>
+	
+	<update id="updateCareer" parameterType="CareerVO">
+		UPDATE CAREER
+			SET
+				CAREER_CATEGORY = #{careerCategory,jdbcType=VARCHAR}
+				, CAREER_COMPANY = #{careerCompany,jdbcType=VARCHAR}
+				, CAREER_TASK = #{careerTask,jdbcType=VARCHAR}
+				, CAREER_CLASS = #{careerClass,jdbcType=VARCHAR}
+				, CAREER_JOIN = #{careerJoin,jdbcType=DATE}
+				, CAREER_RESIGN = #{careerResign,jdbcType=DATE}
+				, CAREER_SALARY = #{careerSalary,jdbcType=VARCHAR}
+				, CAREER_ANNUAL = #{careerAnnual,jdbcType=NUMERIC}
+		WHERE	
+			CAREER_SN = #{careerSn,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteCareer" parameterType="String">
+		UPDATE CAREER
+			SET
+				CAREER_DELETE_DATE = SYSDATE
+		WHERE
+			CAREER_SN = #{careerSn,jdbcType=VARCHAR}
+		
+	</delete>
+	
+	<select id="selectCareerForResume" parameterType="String" resultType="CareerVO">
+		SELECT *
+		FROM CAREER
+		WHERE MEM_ID = #{memId}
+		AND CAREER_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM CAREER A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.CAREER_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>
+</mapper>
+

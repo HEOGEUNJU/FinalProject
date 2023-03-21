@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lab.dao.CounAttachDAO">
+
+	<insert id="insertAttatches" parameterType="kr.or.ddit.lab.vo.CounAttachVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="startAttNo">
+   			SELECT NVL(MAX(ATT_NO), 0)+1
+			FROM ATTACH where tbl_id = #{tblId,jdbcType=VARCHAR}
+		</selectKey>
+		INSERT INTO attach (
+		    tbl_id,
+		    att_no,
+		    att_savename,
+		    att_stre_cours,
+		    att_filename,
+		    att_mime,
+		    att_filesize,
+		    att_fancysize
+		) VALUES (
+		    #{tblId,jdbcType=VARCHAR}
+		    , #{startAttNo}
+		    , #{attSavename,jdbcType=VARCHAR}
+		    , #{attStreCours,jdbcType=VARCHAR}
+		    , #{attFilename,jdbcType=VARCHAR}
+		    , #{attMime,jdbcType=VARCHAR}
+		    , #{attFilesize,jdbcType=NUMERIC}
+		    , #{attFancysize,jdbcType=VARCHAR}
+		)
+   </insert>
+   
+   <select id="selectAttach" parameterType="String" resultType="kr.or.ddit.lab.vo.CounAttachVO">
+		SELECT
+		    tbl_id,
+		    att_no,
+		    att_stre_cours,
+		    att_savename,
+		    att_filename,
+		    att_mime,
+		    att_filesize,
+		    att_fancysize,
+		    att_download
+		FROM
+		    attach
+		WHERE tbl_id = #{tblId}
+				AND att_no = (select max(att_no) from attach where tbl_id = #{tblId})
+   </select>
+   
+</mapper>

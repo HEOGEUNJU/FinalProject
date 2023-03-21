@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.CertificationDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+	<select id="selectCertificationList" parameterType="String" resultType="certificationVO">
+		SELECT CERT_SN, CERT_NAME, CERT_INSTITUTION, CERT_DATE, CERT_INSERT_DATE
+		FROM CERTIFICATION
+		WHERE MEM_ID = #{memId}
+		AND CERT_DELETE_DATE IS NULL
+	</select>
+	
+	<select id="selectCertification" parameterType="String" resultType="certificationVO">
+		SELECT *
+		FROM CERTIFICATION
+		WHERE CERT_SN = #{certSn}
+		AND CERT_DELETE_DATE IS NULL
+	</select>
+	
+	<insert id="insertCertification" parameterType="CertificationVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="certSn">
+			SELECT 'CRT'||LPAD(CERTIFICATION_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO CERTIFICATION (
+		    CERT_SN
+		    , MEM_ID
+		    , CERT_NO
+		    , CERT_NAME
+		    , CERT_DATE
+		    , CERT_INSTITUTION
+		    , CERT_INSERT_DATE
+		) VALUES (
+			#{certSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{certNo,jdbcType=VARCHAR}
+			, #{certName,jdbcType=VARCHAR}
+			, #{certDate,jdbcType=DATE}
+			, #{certInstitution,jdbcType=VARCHAR}
+			, SYSDATE
+		)
+	</insert>
+	
+	<update id="updatecCertification" parameterType="CertificationVO">
+		UPDATE CERTIFICATION
+			SET
+				CERT_NO = #{certNo,jdbcType=VARCHAR}
+				, CERT_NAME = #{certName,jdbcType=VARCHAR}
+				, CERT_DATE = #{certDate,jdbcType=DATE}
+				, CERT_INSTITUTION = #{certInstitution,jdbcType=VARCHAR}
+		WHERE	
+			CERT_SN = #{certSn,jdbcType=VARCHAR}
+			
+	</update>
+	
+	<delete id="deleteCertification" parameterType="String">
+		UPDATE CERTIFICATION
+			SET
+				CERT_DELETE_DATE = SYSDATE			
+		WHERE	
+			CERT_SN = #{certSn,jdbcType=VARCHAR}
+		
+	</delete>
+	
+	<select id="selectCertificationForResume" parameterType="String" resultType="CertificationVO">
+		SELECT *
+		FROM CERTIFICATION
+		WHERE MEM_ID = #{memId}
+		AND CERT_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM CERTIFICATION A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.CERT_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>
+</mapper>
+

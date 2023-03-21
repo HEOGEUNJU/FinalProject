@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.help.dao.NoticeDAO">
+
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일           수정자        수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.}  박형준     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+
+	<sql id="searchFrag">
+		<where>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'announcement'">
+						INSTR(NOTICE_TITLE, #{simpleCondition.searchWord}) > 0 AND NOTICE_SORT = '안내' 
+					</when>
+					<when test="simpleCondition.searchType eq 'open'"> 
+						INSTR(NOTICE_TITLE, #{simpleCondition.searchWord}) > 0 AND NOTICE_SORT = '오픈' 
+					</when>
+					<when test="simpleCondition.searchType eq 'etc'">
+						INSTR(NOTICE_TITLE, #{simpleCondition.searchWord}) > 0 AND NOTICE_SORT = '기타' 
+					</when>
+					<otherwise>
+						INSTR(NOTICE_TITLE, #{simpleCondition.searchWord}) > 0 
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	<!-- 검색 -->
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM NOTICE
+		<include refid="searchFrag"/>
+	</select>
+
+	<!-- 공지사항 목록 -->
+	<select id="selectNoticeList" parameterType="PagingVO" resultType="NoticeVO">
+		WITH ORDEREDNOTICE AS (
+		    SELECT NOTICE_SN, MEM_ID, NOTICE_SORT
+				, NOTICE_TITLE, NOTICE_DATE
+				, NOTICE_HIT, NOTICE_DEL_DATE		           
+		    FROM NOTICE
+			<include refid="searchFrag" />
+		    ORDER BY NOTICE_SN DESC
+		)
+		SELECT A.*
+		FROM (
+		    SELECT ROWNUM RNUM, ORDEREDNOTICE.*
+		    FROM ORDEREDNOTICE
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<!-- 공지사항 세부 -->
+	<select id="selectNotice" parameterType="string" resultType="NoticeVO">
+		SELECT
+		    NOTICE_SN,
+			MEM_ID,
+			NOTICE_SORT,
+			NOTICE_TITLE,
+			NOTICE_CONTENT,
+			NOTICE_DATE,
+			NOTICE_HIT
+		FROM    NOTICE
+		WHERE NOTICE_SN = #{noticeSn}
+	</select>
+
+	<!-- 조회수 증가 -->
+	<update id="incrementHit" parameterType="string">
+		UPDATE NOTICE
+		SET NOTICE_HIT = NOTICE_HIT + 1
+		WHERE NOTICE_SN = #{noticeSn}
+	</update>
+
+	<!-- 공지사항 생성 -->
+	<insert id="insertNotice" parameterType="NoticeVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="noticeSn">
+			SELECT 'N' || LPAD(NOTICE_SEQ.NEXTVAL,6,0) FROM DUAL
+		</selectKey>
+		INSERT INTO notice (
+		    notice_sn,
+		    mem_id,
+		    notice_sort,
+		    notice_title,
+		    notice_content,
+		    notice_date
+		) VALUES (		    
+			#{noticeSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{noticeSort,jdbcType=VARCHAR}
+			, #{noticeTitle,jdbcType=VARCHAR}
+			, #{noticeContent,jdbcType=CLOB}
+			, SYSDATE
+		)
+	</insert>
+	
+	<!-- 공지사항 수정 -->
+	<update id="updateNotice" parameterType="NoticeVO">
+		UPDATE NOTICE
+		SET
+			NOTICE_SORT = #{noticeSort,jdbcType=VARCHAR}
+			, NOTICE_TITLE = #{noticeTitle,jdbcType=VARCHAR}
+			, NOTICE_CONTENT = #{noticeContent,jdbcType=CLOB}
+		WHERE NOTICE_SN = #{noticeSn,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 공지사항 삭제 -->
+	<delete id="deleteNotice" parameterType="string">
+		UPDATE NOTICE
+		SET
+		NOTICE_DEL_DATE = SYSDATE
+		WHERE NOTICE_SN = #{noticeSn}
+	</delete>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+

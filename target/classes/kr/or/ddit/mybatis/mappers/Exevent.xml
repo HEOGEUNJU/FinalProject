@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.ExeventDAO">
+	<sql id="searchFrag">
+		<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+			and INSTR(exevent_name, #{simpleCondition.searchWord}) > 0 		
+		</if>
+	</sql>
+	<!-- 진행중인 이벤트 목론 -->
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		select count(*)
+		from exevent
+		where to_char(sysdate,'YYYYMMDD') <![CDATA[>=]]> to_char(exevent_start,'YYYYMMDD')
+     	  and to_char(sysdate,'YYYYMMDD') <![CDATA[<=]]> to_char(exevent_end,'YYYYMMDD')
+		<include refid="searchFrag"/>
+	</select>
+	
+	<resultMap type="ExeventVO" id="exeventMap" autoMapping="true">
+		<id property="exeventId" column="exevent_id" />
+		<collection property="attatchList" ofType="AttachVO" autoMapping="true" />
+	</resultMap> 
+	
+	<select id="selectEventList" parameterType="PagingVO" resultMap="exeventMap">
+	WITH ORDEREDEVENT AS (
+	SELECT
+	    exevent_id,
+	    exevent_name,
+	    TO_CHAR(exevent_start,'YYYY-MM-DD') as exevent_start,
+	    TO_CHAR(exevent_end,'YYYY-MM-DD') as exevent_end,
+	    exevent_hits,
+	    (
+        select count(tbl_id)
+        from attach
+        where ATTACH.TBL_ID = exevent_attach.tbl_id) att_count,
+        tbl_id,
+	    att_no,
+	    att_stre_cours,
+	    att_savename,
+	    att_filename,
+	    att_mime,
+	    att_filesize,
+	    att_fancysize,
+	    att_download
+	FROM
+	    exevent_attach
+	where to_char(sysdate,'YYYY-MM-DD') <![CDATA[>=]]> exevent_start
+  	  and to_char(sysdate,'YYYY-MM-DD') <![CDATA[<=]]> exevent_end
+	<include refid="searchFrag"/>
+	ORDER BY EXEVENT_ID DESC
+	)
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+		)A
+	WHERE RNUM BETWEEN #{startRow}	AND #{endRow}
+	</select>
+	
+	<select id="selectEvent" parameterType="String" resultMap="exeventMap">
+		SELECT
+		A.*
+		from(
+			select 
+				exevent_id,
+			    exevent_name,
+			    exevent_content,
+			    TO_CHAR(exevent_start,'YYYY-MM-DD') as exevent_start,
+			    TO_CHAR(exevent_end,'YYYY-MM-DD') as exevent_end,
+		        tbl_id,
+			    att_no,
+			    att_stre_cours,
+			    att_savename,
+			    att_filename,
+			    att_mime,
+			    att_filesize,
+			    att_fancysize,
+			    att_download,
+		   		LEAD(exevent_id, 1) OVER (ORDER BY exevent_id DESC) AS PRE_exevent,
+				LAG(exevent_id, 1) OVER (ORDER BY exevent_id DESC) AS NEXT_exevent
+			from exevent_attach 
+			where to_char(sysdate,'YYYY-MM-DD') <![CDATA[>=]]> exevent_start
+     	 	 and to_char(sysdate,'YYYY-MM-DD') <![CDATA[<=]]> exevent_end
+		)A
+		where exevent_id = #{exeventId}
+	</select>
+	
+	<!-- 종료된 이벤트 목록 -->
+	<select id="selectEndTotalRecord" parameterType="PagingVO" resultType="int">
+		select count(*)
+		from exevent_attach
+		where to_char(sysdate,'YYYYMMDD') <![CDATA[<]]> to_char(exevent_start,'YYYYMMDD')
+     	  or to_char(sysdate,'YYYYMMDD') <![CDATA[>]]> to_char(exevent_end,'YYYYMMDD')
+		<include refid="searchFrag"/>
+	</select>
+	
+	<select id="selectEndEventList" parameterType="PagingVO" resultMap="exeventMap">
+	WITH ORDEREDEVENT AS (
+	SELECT
+	    exevent_id,
+	    exevent_name,
+	    TO_CHAR(exevent_start,'YYYY-MM-DD') as exevent_start,
+	    TO_CHAR(exevent_end,'YYYY-MM-DD') as exevent_end,
+	    exevent_hits,
+	    (
+        select count(tbl_id)
+        from attach
+        where ATTACH.TBL_ID = exevent_attach.tbl_id) att_count,
+        tbl_id,
+	    att_no,
+	    att_stre_cours,
+	    att_savename,
+	    att_filename,
+	    att_mime,
+	    att_filesize,
+	    att_fancysize,
+	    att_download
+	FROM
+	    exevent_attach
+	where to_char(sysdate,'YYYY-MM-DD') <![CDATA[<]]> exevent_start
+		<include refid="searchFrag"/>
+  	  	or to_char(sysdate,'YYYY-MM-DD') <![CDATA[>]]> exevent_end
+	ORDER BY EXEVENT_ID DESC
+	)
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+		)A
+	WHERE RNUM BETWEEN #{startRow}	AND #{endRow}
+	</select>
+
+	<select id="selectEndEvent" parameterType="String" resultMap="exeventMap">
+		SELECT
+		A.*
+		from(
+			select 
+				exevent_id,
+			    exevent_name,
+			    exevent_content,
+			    TO_CHAR(exevent_start,'YYYY-MM-DD') as exevent_start,
+			    TO_CHAR(exevent_end,'YYYY-MM-DD') as exevent_end,
+		        tbl_id,
+			    att_no,
+			    att_stre_cours,
+			    att_savename,
+			    att_filename,
+			    att_mime,
+			    att_filesize,
+			    att_fancysize,
+			    att_download,
+		   		LEAD(exevent_id, 1) OVER (ORDER BY exevent_id DESC) AS PRE_exevent,
+				LAG(exevent_id, 1) OVER (ORDER BY exevent_id DESC) AS NEXT_exevent
+			from exevent_attach 
+			where to_char(sysdate,'YYYY-MM-DD') <![CDATA[<]]> exevent_start
+     	 	 or to_char(sysdate,'YYYY-MM-DD') <![CDATA[>]]> exevent_end
+		)A
+		where exevent_id = #{exeventId}
+	</select>	
+
+	<!-- 이벤트 등록 -->
+	<insert id="insertExevent" parameterType="kr.or.ddit.expert.vo.ExeventVO">
+	<selectKey order="BEFORE"  resultType="String" keyProperty="exeventId">
+		SELECT 'EXE' || LPAD(EXEVENT_SEQ.NEXTVAL,6,0) FROM DUAL
+	</selectKey>
+	INSERT INTO exevent (
+	    exevent_id,
+	    exevent_name,
+	    exevent_content,
+	    exevent_start,
+	    exevent_end
+	) VALUES (
+		 #{exeventId,jdbcType=VARCHAR}
+		, #{exeventName,jdbcType=VARCHAR}
+		, #{exeventContent,jdbcType=VARCHAR}
+		, #{exeventStart,jdbcType=DATE}
+		, #{exeventEnd,jdbcType=DATE}
+	)
+	</insert>
+
+	<update id="updateHits" parameterType="String">
+	UPDATE exevent
+	SET
+	    exevent_hits = exevent_hits+1
+	WHERE
+	    exevent_id = #{exeventId,jdbcType=VARCHAR}	
+	</update>
+	
+	<update id="updateExevent" parameterType="ExeventVO">
+	UPDATE exevent
+	SET
+		exevent_start = #{exeventStart,jdbcType=DATE}
+		, exevent_end = #{exeventEnd,jdbcType=DATE}
+		, exevent_content = #{exeventContent,jdbcType=VARCHAR}
+	WHERE
+	 	exevent_id = #{exeventId,jdbcType=VARCHAR}	
+	</update>
+	
+	<delete id="deleteExevent" parameterType="String">
+	    DELETE FROM EXEVENT
+   		WHERE  exevent_id = #{exeventId,jdbcType=VARCHAR}	
+	</delete>
+</mapper> 

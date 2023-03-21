@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lab.dao.NewsDAO">
+	
+	<sql id="searchFrag">
+		<where>
+	    	<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+	    		AND INSTR(UPPER(NEWS_NAME), UPPER(#{simpleCondition.searchWord})) > 0
+	    	</if>
+	    	<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.newsField)">
+	    		AND INSTR(NEWS_FIELD, #{simpleCondition.newsField}) > 0
+	    	</if>
+	    </where>
+	</sql>
+	
+	<select id="selectNewsList" parameterType="PagingVO" resultType="kr.or.ddit.lab.vo.NewsVO">
+		WITH ORDEREDNEWS AS (
+		    SELECT A.NEWS_FIELD, A.NEWS_NAME, A.NEWS_SEMINAME, A.NEWS_HIT, A.NEWS_DATE, A.NEWS_NO, B.ATT_SAVENAME		           
+            FROM NEWS A
+            LEFT OUTER JOIN ATTACH B ON A.NEWS_NO = B.TBL_ID
+			<include refid="searchFrag"/>
+		    ORDER BY NEWS_NO DESC
+		)
+		SELECT A.*
+		FROM (
+		    SELECT ROWNUM RNUM, ORDEREDNEWS.*
+		    FROM ORDEREDNEWS
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>	
+	
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM NEWS
+		<include refid="searchFrag"/>
+	</select>
+	
+<!-- 	<select id="selectCateRecord" parameterType="PagingVO" resultType="int"> -->
+<!-- 		SELECT COUNT(*) -->
+<!-- 		FROM NEWS -->
+<!-- 		WHERE NEWS_FIELD = #{newsField} -->
+<!-- 	</select> -->
+	
+	<select id="selectNews" parameterType="String" resultType="NewsVO">
+		SELECT A.NEWS_NO, A.NEWS_FIELD, A.NEWS_NAME, A.NEWS_SEMINAME, A.NEWS_HIT, A.NEWS_DATE, A.NEWS_CONTENT, B.ATT_SAVENAME
+		FROM NEWS A
+		LEFT OUTER JOIN ATTACH B ON A.NEWS_NO = B.TBL_ID
+		WHERE NEWS_NO = #{newsNo}
+	</select>
+	
+	<insert id="insertNews" parameterType="NewsVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="newsNo">
+			SELECT 'NEWS'||LPAD(NEWS_SEQ.NEXTVAL, 6, 0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO NEWS (
+		    NEWS_NO,
+		    NEWS_NAME,
+		    NEWS_SEMINAME,
+		    NEWS_DATE,
+		    NEWS_FIELD,
+		    NEWS_HIT,
+		    NEWS_CONTENT
+		) VALUES (
+			#{newsNo,jdbcType=VARCHAR}
+			, #{newsName,jdbcType=VARCHAR}
+			, #{newsSemiName,jdbcType=VARCHAR}
+			, SYSDATE
+			, #{newsField,jdbcType=VARCHAR}
+			, #{newsHit,jdbcType=NUMERIC}
+			, #{newsContent,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<update id="incrementHit" parameterType="String">
+		UPDATE NEWS
+		SET
+		NEWS_HIT = NEWS_HIT + 1
+		WHERE NEWS_NO = #{newsNo}
+	</update>
+	
+	<update id="updateNews" parameterType="NewsVO">
+		UPDATE NEWS
+		SET
+		    NEWS_NAME = #{newsName,jdbcType=VARCHAR}
+		    , NEWS_SEMINAME = #{newsSemiName,jdbcType=VARCHAR}
+		    , NEWS_FIELD = #{newsField,jdbcType=VARCHAR}
+		    , NEWS_CONTENT = #{newsContent,jdbcType=VARCHAR}
+		WHERE NEWS_NO = #{newsNo}
+	</update>
+	
+	<delete id="deleteNews" parameterType="String">
+		DELETE 
+		FROM NEWS
+		WHERE NEWS_NO = #{newsNo}
+	</delete>
+	
+</mapper>

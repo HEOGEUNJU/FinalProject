@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.myintro.dao.MyintroDAO">
+
+	<select id="selectMyintro" parameterType="String" resultType="kr.or.ddit.myintro.vo.MyintroVO">
+		SELECT *
+		FROM MYINTRO
+		WHERE MYINTRO_SN = #{myintroSn}
+		AND MYINTRO_DELETE_DATE IS NULL
+	</select>
+
+	<select id="selectMyintroList" parameterType="String" resultType="kr.or.ddit.myintro.vo.MyintroVO">
+		SELECT *
+		FROM MYINTRO
+		WHERE MEM_ID = #{memId}
+		AND MYINTRO_DELETE_DATE IS NULL
+	</select>
+
+	<insert id="insertMyintro" parameterType="kr.or.ddit.myintro.vo.MyintroVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="myintroSn">
+			SELECT 'MIT'||LPAD(MYINTRO_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO MYINTRO (
+		    MYINTRO_SN
+		    , MEM_ID
+		    , MYINTRO_TITLE
+		    , MYINTRO_GROWTH
+		    , MYINTRO_PERSONALITY
+		    , MYINTRO_SCHOOLDAY
+		    , MYINTRO_JOB
+		    , MYINTRO_MOTIVE
+		    , MYINTRO_ASPIRATION
+		    , MYINTRO_FAMILY
+		    , MYINTRO_SUBACTIVITY
+		    , MYINTRO_MAJOR
+		    , MYINTRO_COURSE
+		    , MYINTRO_OBJECTIVE
+		    , MYINTRO_CLUB
+		    , MYINTRO_VOLUNTEER
+		    , MYINTRO_ADD1
+		    , MYINTRO_ADD2
+		    , MYINTRO_ADD3
+		    , MYINTRO_INSERT_DATE
+		) VALUES (
+			#{myintroSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{myintroTitle, jdbcType=VARCHAR}
+			, #{myintroGrowth,jdbcType=VARCHAR}
+			, #{myintroPersonality,jdbcType=VARCHAR}
+			, #{myintroSchoolday,jdbcType=VARCHAR}
+			, #{myintroJob,jdbcType=VARCHAR}
+			, #{myintroMotive,jdbcType=VARCHAR}
+			, #{myintroAspiration,jdbcType=VARCHAR}
+			, #{myintroFamily,jdbcType=VARCHAR}
+			, #{myintroSubactivity,jdbcType=VARCHAR}
+			, #{myintroMajor,jdbcType=VARCHAR}
+			, #{myintroCourse,jdbcType=VARCHAR}
+			, #{myintroObjective,jdbcType=VARCHAR}
+			, #{myintroClub,jdbcType=VARCHAR}
+			, #{myintroVolunteer,jdbcType=VARCHAR}
+			, #{myintroAdd1,jdbcType=VARCHAR}
+			, #{myintroAdd2,jdbcType=VARCHAR}
+			, #{myintroAdd3,jdbcType=VARCHAR}
+			, SYSDATE
+		)
+	</insert>
+
+	<update id="updateMyintro" parameterType="kr.or.ddit.myintro.vo.MyintroVO">
+		UPDATE MYINTRO
+			SET
+				MYINTRO_TITLE = #{myintroTitle, jdbcType=VARCHAR}
+				, MYINTRO_GROWTH = #{myintroGrowth,jdbcType=VARCHAR}
+				, MYINTRO_PERSONALITY = #{myintroPersonality,jdbcType=VARCHAR}
+				, MYINTRO_SCHOOLDAY = #{myintroSchoolday,jdbcType=VARCHAR}
+				, MYINTRO_JOB = #{myintroJob,jdbcType=VARCHAR}
+				, MYINTRO_MOTIVE = #{myintroMotive,jdbcType=VARCHAR}
+				, MYINTRO_ASPIRATION = #{myintroAspiration,jdbcType=VARCHAR}
+				, MYINTRO_FAMILY = #{myintroFamily,jdbcType=VARCHAR}
+				, MYINTRO_SUBACTIVITY = #{myintroSubactivity,jdbcType=VARCHAR}
+				, MYINTRO_MAJOR = #{myintroMajor,jdbcType=VARCHAR}
+				, MYINTRO_COURSE = #{myintroCourse,jdbcType=VARCHAR}
+				, MYINTRO_OBJECTIVE = #{myintroObjective,jdbcType=VARCHAR}
+				, MYINTRO_CLUB = #{myintroClub,jdbcType=VARCHAR}
+				, MYINTRO_VOLUNTEER = #{myintroVolunteer,jdbcType=VARCHAR}
+				, MYINTRO_ADD1 = #{myintroAdd1,jdbcType=VARCHAR}
+				, MYINTRO_ADD2 = #{myintroAdd2,jdbcType=VARCHAR}
+				, MYINTRO_ADD3 = #{myintroAdd3,jdbcType=VARCHAR}
+		WHERE
+			MYINTRO_SN = #{myintroSn,jdbcType=VARCHAR}
+<!-- 			, MEM_ID = #{memId,jdbcType=VARCHAR} -->
+	</update>
+
+	<delete id="deleteMyintro" parameterType="String">
+		UPDATE MYINTRO
+			SET
+			MYINTRO_DELETE_DATE = SYSDATE
+		WHERE
+			MYINTRO_SN = #{myintroSn,jdbcType=VARCHAR}
+	</delete>
+</mapper>

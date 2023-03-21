@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.ExprodDAO">
+ 	<sql id="mainSearch">
+			<if test="simpleCondition neq null">
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchField) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+					and exfield_id = #{simpleCondition.searchField,jdbcType=VARCHAR}
+					and exjob_id = #{simpleCondition.searchValue,jdbcType=VARCHAR}
+					and INSTR(EXPROD_NAME, #{simpleCondition.searchWord,jdbcType=VARCHAR})>0
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchField) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchWord)">
+					and exfield_id = #{simpleCondition.searchField,jdbcType=VARCHAR}
+					and exjob_id = #{simpleCondition.searchValue,jdbcType=VARCHAR}
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchField) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+					and exjob_id = #{simpleCondition.searchValue,jdbcType=VARCHAR}
+					and INSTR(EXPROD_NAME, #{simpleCondition.searchWord,jdbcType=VARCHAR})>0
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchField) and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+					and exfield_id = #{simpleCondition.searchField,jdbcType=VARCHAR}
+					and INSTR(EXPROD_NAME, #{simpleCondition.searchWord,jdbcType=VARCHAR})>0
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchField) and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchWord)">
+					and exfield_id = #{simpleCondition.searchField,jdbcType=VARCHAR}
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchField)  and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchWord)">
+					and exjob_id = #{simpleCondition.searchValue,jdbcType=VARCHAR}				
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchField)  and @org.apache.commons.lang3.StringUtils@isBlank(simpleCondition.searchValue) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+					and INSTR(EXPROD_NAME, #{simpleCondition.searchWord,jdbcType=VARCHAR})>0
+				</when> 
+				
+			<!-- 	<otherwise>
+					exfield_id = #{simpleCondition.searchField,jdbcType=VARCHAR}
+					OR
+					exjob_id = #{simpleCondition.searchValue,jdbcType=VARCHAR}
+					OR
+					INSTR(EXPROD_NAME, #{simpleCondition.searchWord,jdbcType=VARCHAR})>0
+				</otherwise> -->
+			</choose>
+			</if>
+			
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchType)">
+				AND exlprod_id = #{simpleCondition.searchType}		
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchId)">
+				and INSTR(mem_id, #{simpleCondition.searchId,jdbcType=VARCHAR})>0	
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.startDate)">
+				and exprod_start <![CDATA[>=]]> #{simpleCondition.startDate}	
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.endDate)">
+				and exprod_end <![CDATA[<=]]> #{simpleCondition.endDate}
+			</if>
+	</sql> 
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		select count(*)
+		from mem_expert_exprod
+<!-- 		<include refid="searchFrag"/> -->
+		where to_char(sysdate,'YYYYMMDD') <![CDATA[>=]]> TO_CHAR(exprod_start,'YYYYMMDD')
+    	and to_char(sysdate,'YYYYMMDD') <![CDATA[<=]]> TO_CHAR(exprod_end,'YYYYMMDD')
+    	and exprod_aproval = 'Y'
+		<include refid="mainSearch"/>
+	</select>
+	 
+	<select id="selectExprodList" parameterType="PagingVO" resultType="ExprodVO">
+	WITH ORDEREDEVENT AS (
+	SELECT
+	    exprod_id,
+	    to_char(exprod_start,'YYYYMMDD') as exprod_start,
+	    to_char(exprod_end,'YYYYMMDD') as exprod_end,
+	    exprod_target,
+	    exprod_name,
+	    to_char(exprod_price,'FM999,999,999,999') as exprod_price,
+	    exprod_way,
+	    exprod_time,
+	    mem_id,
+	    mem_name,
+	    exprod_aproval,
+	    exfield_id,
+	    expert_field,
+	    exjob_id,
+    	EXLPROD_ID,
+    	exprod_pr,
+    	E.ATT_SAVENAME     
+	FROM
+	    mem_expert_exprod B left outer join ATTACH e on b.mem_id = E.TBL_ID
+<!--     <include refid="searchFrag"/> -->
+	 where to_char(sysdate,'YYYYMMDD') <![CDATA[>=]]> exprod_start
+     and to_char(sysdate,'YYYYMMDD') <![CDATA[<=]]> exprod_end
+     and exprod_aproval = 'Y'
+    <include refid="mainSearch"/>
+    ORDER BY exprod_id DESC
+    )
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+	)A
+	WHERE RNUM BETWEEN #{startRow}	AND #{endRow}
+	</select>
+	<select id="selectExprodMissionList" parameterType="PagingVO" resultType="ExprodVO">
+	WITH ORDEREDEVENT AS (
+	SELECT
+	    exprod_id,
+	    to_char(exprod_start,'YYYYMMDD') as exprod_start,
+	    to_char(exprod_end,'YYYYMMDD') as exprod_end,
+	    exprod_target,
+	    exprod_name,
+	    to_char(exprod_price,'FM999,999,999,999') as exprod_price,
+	    exprod_way,
+	    exprod_time,
+	    mem_id,
+	    mem_name,
+	    exprod_aproval,
+	    exfield_id,
+	    expert_field,
+	    exjob_id,
+    	EXLPROD_ID,
+    	exprod_pr	    
+	FROM
+	    mem_expert_exprod
+<!--     <include refid="searchFrag"/> -->
+    where 1=1
+    <include refid="mainSearch"/>
+    ORDER BY exprod_id
+    )
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+	)A
+	WHERE RNUM BETWEEN #{startRow}	AND #{endRow}
+	</select>
+	
+	<select id="selectTopExprodList" resultType="ExprodVO">
+	WITH ORDEREDEVENT AS (
+	SELECT
+	    exprod_id,
+	    to_char(exprod_start,'YYYYMMDD') as exprod_start,
+	    to_char(exprod_end,'YYYYMMDD') as exprod_end,
+	    exprod_target,
+	    exprod_name,
+	    to_char(exprod_price,'FM999,999,999,999') as exprod_price,
+	    exprod_way,
+	    exprod_time,
+	    mem_id,
+	    mem_name,
+	    exprod_aproval,
+	    exfield_id,
+	    expert_field,
+	    exjob_id,
+    	EXLPROD_ID,
+    	exprod_pr,
+    	E.ATT_SAVENAME 	    
+	FROM
+	    mem_expert_exprod B left outer join ATTACH e on b.mem_id = E.TBL_ID
+	 where to_char(sysdate,'YYYYMMDD') <![CDATA[>=]]> exprod_start
+	     and to_char(sysdate,'YYYYMMDD') <![CDATA[<=]]> exprod_end
+	     and exprod_aproval = 'Y'
+    ORDER BY exprod_id 
+    )
+	SELECT A.*
+	FROM (
+		SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		FROM ORDEREDEVENT
+	)A
+    where a.exprod_id in(
+        select    
+        b.exprod_id
+        from(
+            select
+            exprod_id,
+            rank() over (order by count(exprod_id) desc) as rank
+            FROM
+            mem_seeker_excart_exprod    
+            group by exprod_id)b
+        where b.rank<![CDATA[<=]]>4)
+	</select>
+	
+	
+	<insert id="InsertExprod" parameterType="kr.or.ddit.expert.vo.ExprodVO">
+	<selectKey order="BEFORE" resultType="string" keyProperty="exprodId">
+		SELECT 'EXP' || LPAD(COMPANY_SEQ.NEXTVAL,6,0) FROM DUAL
+	</selectKey>
+	INSERT INTO exprod (
+	    exprod_id,
+	    exprod_start,
+	    exprod_end,
+	    exprod_target,
+	    exprod_name,
+	    exprod_price,
+	    exprod_way,  
+	    exprod_time,
+	    exprod_detail,
+	    mem_id,
+	    exprod_aproval,
+	    exlprod_id,
+	    exprod_pr,
+	    exprod_applidate
+	) VALUES (
+	 #{exprodId,jdbcType=VARCHAR}
+	, TO_DATE(#{exprodStart,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS')
+	, TO_DATE(#{exprodEnd,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS')
+	, #{exprodTarget,jdbcType=VARCHAR}
+	, #{exprodName,jdbcType=VARCHAR}
+	, REGEXP_REPLACE(#{exprodPrice,jdbcType=VARCHAR}, '[^[:digit:]]')
+	, #{exprodWay,jdbcType=VARCHAR}
+	, #{exprodTime,jdbcType=VARCHAR}
+	, #{exprodDetail,jdbcType=VARCHAR}
+	, #{memId,jdbcType=VARCHAR}
+	, 'N'
+	, 'EL002'
+	, #{exprodPr,jdbcType=VARCHAR}
+	, sysdate
+	)   		
+	</insert>
+	
+	<select id="selectExprod" parameterType="String" resultType="kr.or.ddit.expert.vo.ExprodVO">
+	SELECT
+	A.*
+	from(
+	select
+		exprod_Id,
+	    to_char(exprod_start, 'YYYY.MM.DD') as exprod_start,
+	    to_char(exprod_end, 'YYYY.MM.DD') as exprod_end,
+	    exprod_target,
+	    exprod_name,
+	    to_char(exprod_price,'FM999,999,999,999') as exprod_price,
+	    exprod_way,
+	    exprod_time,
+	    exprod_detail,
+	    mem_id,
+	    exprod_pr,
+	    exprod_aproval,
+	    exlprod_id,
+		LEAD(exprod_id, 1) OVER (ORDER BY exprod_id DESC) AS PRE_exprod,
+		LAG(exprod_id, 1) OVER (ORDER BY exprod_id DESC) AS NEXT_exprod,
+    	E.ATT_SAVENAME
+	from exprod B left outer join ATTACH e on b.mem_id = E.TBL_ID
+	where 
+	 to_char(sysdate,'YYYYMMDD') <![CDATA[>=]]> exprod_start
+     and to_char(sysdate,'YYYYMMDD') <![CDATA[<=]]> exprod_end
+	)A
+	where exprod_id = #{exprodId,jdbcType=VARCHAR}
+
+	</select>
+	<!-- 관심상품 -->
+	<select id="selectExprodlike" parameterType="string" resultType="int">
+	SELECT COUNT(*) 
+	FROM exinterest
+	WHERE exprod_id=#{exprodId,jdbcType=VARCHAR} AND MEM_ID=#{memId,jdbcType=VARCHAR}
+	</select>
+	
+	<insert id="insertExprodlike" parameterType="string">
+	INSERT INTO exinterest (
+    exprod_id,
+    mem_id
+	) VALUES (
+	#{exprodId,jdbcType=VARCHAR}
+	, #{memId,jdbcType=VARCHAR}
+	)
+	</insert>
+	
+	<delete id="deleteExprodlike" parameterType="string">
+	delete from exinterest
+	WHERE exprod_id=#{exprodId,jdbcType=VARCHAR} 
+	AND MEM_ID=#{memId,jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="updateExprod" parameterType="ExprodVO">
+	UPDATE exprod
+	SET
+	    exprod_start= to_date(#{exprodStart,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS'),
+	    exprod_end= to_date(#{exprodEnd,jdbcType=DATE},'YYYY-MM-DD HH24:MI:SS'),
+	    exprod_target= #{exprodTarget,jdbcType=VARCHAR},
+	    exprod_name= #{exprodName,jdbcType=VARCHAR},
+	    exprod_price= REGEXP_REPLACE(#{exprodPrice,jdbcType=VARCHAR}, '[^[:digit:]]'),
+	    exprod_way= #{exprodWay,jdbcType=VARCHAR},
+	    exprod_time= #{exprodTime,jdbcType=VARCHAR},
+	    exlprod_id=  'EL002',
+	    exprod_aproval = 'N',
+	    exprod_pr = #{exprodPr,jdbcType=VARCHAR},
+	    exprod_detail =  #{exprodDetail,jdbcType=CLOB}
+	where 
+		exprod_id = #{exprodId,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteExprod" parameterType="String">
+	DELETE FROM EXPROD
+	WHERE exprod_id = #{exprodId,jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="updateExprodName" parameterType="ExprodVO">
+	UPDATE exprod
+	SET
+	    exprod_name= #{exprodName,jdbcType=VARCHAR}
+	where 
+		exprod_id = #{exprodId,jdbcType=VARCHAR}
+	</update>
+	<select id="selectExreviewList" parameterType="String" resultType="kr.or.ddit.expert.vo.ExreviewVO">
+	SELECT
+	    exreview_id,
+	    exreview_name,
+	    exreview_writer,
+	    exreview_pass,
+	    exreview_hit,
+	    review_cartid,
+	    exreview_date,
+	    exreview_score,
+	    exreview_content
+	FROM
+	    mem_excart_exprod_exreview
+	WHERE EXPROD_ID = #{exprodId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 전문가별 등록상품 목록 조회 -->
+	<select id="selectExpertExprodList" parameterType="String" resultType="ExprodVO">
+	SELECT
+	    EXPROD_ID
+		,EXPROD_START
+		,EXPROD_END
+		,EXPROD_TARGET
+		,EXPROD_NAME
+		,EXPROD_PRICE
+		,EXPROD_WAY
+		,EXPROD_TIME
+		,MEM_ID
+		,EXPROD_APROVAL
+		,EXLPROD_ID
+		,EXPROD_DETAIL
+		,EXPROD_PR
+		,EXPROD_APPLIDATE
+		,EXPROD_APPROVAL_DATE
+	FROM
+	    EXPROD
+	where mem_id = #{memId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- ==================================== 시스템 관리 부분 ==================================== -->
+	<!-- 상품 갯수 -->
+	<select id="selectTotalCount" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+	    FROM MEM_EXPERT_EXPROD
+	    WHERE EXPROD_APROVAL = 'N'
+		AND EXPERT_APPROVAL = 'Y'
+		AND MEM_AUTH_CD = 'ROLE_EXPERT'
+	</select>
+	
+	<!-- 상품 신청 목록 -->
+	<select id="selectAppliProdList" parameterType="PagingVO" resultType="ExprodVO">
+		WITH ORDEREDEVENT AS (    
+		    SELECT EXPROD_ID
+		           , MEM_ID
+		           , MEM_NAME
+		           , MEM_AUTH_CD
+		           , EXPERT_APPROVAL
+		           , EXPERT_APPROVAL_DATE
+		           , EXPERT_FIELD
+		           , EXPROD_NAME
+		           , EXPROD_PRICE
+		           , EXPROD_APROVAL
+		           , EXLPROD_ID
+		           , EXPROD_APPLIDATE
+		           , EXPROD_APPROVAL_DATE
+		      FROM MEM_EXPERT_EXPROD 
+		     WHERE EXPROD_APROVAL = 'N'
+		       AND EXPERT_APPROVAL = 'Y'
+		       AND MEM_AUTH_CD = 'ROLE_EXPERT'
+		     ORDER BY EXPROD_ID 
+		    )
+		SELECT A.*
+		FROM (
+		    SELECT ROWNUM AS RNUM, ORDEREDEVENT.*
+		    FROM ORDEREDEVENT
+		)A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<!-- 상품 신청 세부 -->
+	<select id="selectAppliProd" parameterType="string" resultType="ExprodVO">
+		SELECT mem_id, mem_name, mem_nickname, 
+			   mem_birth, mem_gender, mem_zip,
+    		   mem_addr1, mem_addr2, mem_email,
+    		   mem_tel, mem_certification, mem_carttotal,
+    		   mem_auth_cd, mem_score, mem_joindate,
+    		   expert_approval, expert_approval_date,
+    		   expert_introduction, expert_joinpath,
+    		   expert_field, expert_tag, expert_zip,
+    		   expert_addr, expert_addr2, expert_tel,
+    		   expert_email, expert_bank, expert_account,
+    		   expert_holder, exlprod_id, exfield_id,
+    		   exjob_id, exprod_id, exprod_start,
+    		   exprod_end, exprod_target, exprod_name,
+    		   exprod_price, exprod_way, exprod_time,
+    		   exprod_detail, exprod_aproval, exprod_pr,
+    		   exprod_applidate, exprod_approval_date
+		FROM mem_expert_exprod
+		WHERE EXPROD_ID = #{exprodId}
+	</select>
+	
+	<!-- 상품 신청 승인 -->
+	<update id="updateAppliProd" parameterType="ExprodVO">
+		UPDATE EXPROD
+	   	SET EXPROD_APROVAL = 'Y',
+	   	    EXPROD_APPROVAL_DATE = SYSDATE
+	 	WHERE EXPROD_ID = #{exprodId}
+	</update>
+	
+	<!-- 상품 신청 반려 -->
+	<delete id="deleteAppliProd" parameterType="ExprodVO">
+		DELETE FROM EXPROD
+		WHERE EXPROD_ID = #{exprodId}
+  		AND EXPROD_APROVAL = 'N'
+	</delete>
+	<!-- 판매목록조회 -->
+	<select id="selectExcartMypage" parameterType="String" resultType="ExcartVO">
+		SELECT
+		    mem_id,
+		    mem_name,
+		    exprod_id,
+		    excart_price,
+		    excart_date,
+		    review_state,
+		    excart_state,
+		    exprod_name,
+		    expert_id,
+		    exprod_aproval
+		FROM
+		    mem_seeker_excart_exprod
+		where expert_id=#{memId}
+	</select>
+</mapper>

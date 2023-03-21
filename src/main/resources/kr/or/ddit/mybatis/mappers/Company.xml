@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.company.dao.CompanyDAO">
+
+<sql id="searchFrag">
+	<where>
+		<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+			INSTR(CMP_NAME, #{simpleCondition.searchWord}) > 0 		
+		</if>
+	</where>
+</sql>
+	
+<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+	select count(*)
+	from company
+	<include refid="searchFrag"/>
+</select>	
+
+<select id="selectCompanyList" parameterType="PagingVO" resultType="kr.or.ddit.company.vo.CompanyVO">
+	WITH ORDEREDCOMPANY AS (
+		SELECT CMP_ID, CMP_NO, CMP_NAME, CMP_REP_NAME, CMP_BSNS_NO, CMP_ADDR1, CMP_ADDR2, CMP_ZIP, CMP_PHONE, CMP_EMAIL, CMP_URL, CMP_ESTBL_DATE, CMP_SMENP, CMP_EMP_NO, CMP_AVR_WORK, CMP_AVR_SALARY, CMP_MB_NAME, CMP_CHECK, CMP_CONTENT, CMP_LOGO, ATT_ID
+		FROM COMPANY
+		<include refid="searchFrag"/>
+		ORDER BY CMP_ID DESC
+	 )
+	 SELECT A.*
+	 FROM (
+	 	SELECT ROWNUM AS RNUM, ORDEREDCOMPANY.*
+	 	FROM ORDEREDCOMPANY
+	 	)A
+	 WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+</select>	
+	 
+<select id="selectCompany" parameterType="String" resultType="kr.or.ddit.company.vo.CompanyVO">
+	select *
+	from company
+	where 
+    <include refid="searchFrag"/>
+
+</select>
+<select id="selectUpdateCompany" parameterType="String" resultType="kr.or.ddit.company.vo.CompanyVO">
+	select *
+	from company
+	where 
+    cmp_id = #{cmpId,jdbcType=VARCHAR}
+</select>
+
+<update id="updateCompany" parameterType="CompanyVO">
+UPDATE company
+SET
+cmp_no =          #{cmpNo,jdbcType=VARCHAR}        
+,cmp_name =        #{cmpName,jdbcType=VARCHAR}      
+,cmp_rep_name =    #{cmpRepName,jdbcType=VARCHAR}   
+,cmp_bsns_no =     #{cmpBsnsNo,jdbcType=VARCHAR}    
+,cmp_addr1 =       #{cmpAddr1,jdbcType=VARCHAR}     
+,cmp_addr2 =       #{cmpAddr2,jdbcType=VARCHAR}     
+,cmp_zip =         #{cmpZip,jdbcType=VARCHAR}       
+,cmp_phone =       #{cmpPhone,jdbcType=VARCHAR}     
+,cmp_email =       #{cmpEmail,jdbcType=VARCHAR}     
+,cmp_url =         #{cmpUrl,jdbcType=VARCHAR}       
+,cmp_estbl_date =  #{cmpEstblDate,jdbcType=DATE}    
+,cmp_smenp =       #{cmpSmenp,jdbcType=VARCHAR}     
+,cmp_emp_no =      #{cmpEmpNo,jdbcType=VARCHAR}     
+,cmp_avr_work =    #{cmpAvrWork,jdbcType=VARCHAR}   
+,cmp_avr_salary =  #{cmpAvrSalary,jdbcType=VARCHAR} 
+,cmp_mb_name =     #{cmpMbName,jdbcType=VARCHAR}     
+,cmp_content =     #{cmpContent,jdbcType=CLOB}  
+,cmp_check   =     'N'   
+where  
+cmp_id = #{cmpId,jdbcType=VARCHAR}   	
+</update>
+
+<insert id="insertCompany" parameterType="CompanyVO">
+	<selectKey order="BEFORE" resultType="string" keyProperty="cmpId">
+		SELECT 'CMP' || LPAD(COMPANY_SEQ.NEXTVAL,6,0) FROM DUAL
+	</selectKey>
+	INSERT INTO COMPANY	
+	(
+		CMP_ID, 
+		CMP_NO, 
+		CMP_NAME, 
+		CMP_REP_NAME, 
+		CMP_BSNS_NO, 
+		CMP_ADDR1, 
+		CMP_ADDR2, 
+		CMP_ZIP, 
+		CMP_PHONE, 
+		CMP_EMAIL, 
+		CMP_URL,
+		CMP_ESTBL_DATE, 
+		CMP_SMENP, 
+		CMP_EMP_NO,
+		CMP_AVR_WORK,
+		CMP_AVR_SALARY,
+		CMP_MB_NAME, 
+		CMP_CONTENT
+	)VALUES (
+		  #{cmpId,jdbcType=VARCHAR}
+		, #{cmpNo,jdbcType=VARCHAR}
+		, #{cmpName,jdbcType=VARCHAR}
+		, #{cmpRepName,jdbcType=VARCHAR}
+		, #{cmpBsnsNo,jdbcType=VARCHAR}
+		, #{cmpAddr1,jdbcType=VARCHAR}
+		, #{cmpAddr2,jdbcType=VARCHAR}
+		, #{cmpZip,jdbcType=VARCHAR}
+		, #{cmpPhone,jdbcType=VARCHAR}
+		, #{cmpEmail,jdbcType=VARCHAR}
+		, #{cmpUrl,jdbcType=VARCHAR}
+		, #{cmpEstblDate,jdbcType=DATE}
+		, #{cmpSmenp,jdbcType=VARCHAR}
+		, #{cmpEmpNo,jdbcType=VARCHAR}
+		, #{cmpAvrWork,jdbcType=VARCHAR}
+		, #{cmpAvrSalary,jdbcType=VARCHAR}
+		, #{cmpMbName,jdbcType=VARCHAR}
+		, #{cmpContent,jdbcType=CLOB}
+	)
+</insert>
+
+
+<!-- ========================================== 시스템 관리 부분 ========================================== -->
+<delete id="deleteAppliCmp" parameterType="CompanyVO">
+	DELETE FROM COMPANY
+	WHERE CMP_ID = #{cmpId}
+</delete>
+
+<!-- 회사 상세 -->
+<select id="selectCmp" parameterType="string" resultType="CompanyVO">
+	SELECT CMP_ID, CMP_NO, CMP_NAME
+       , CMP_REP_NAME, CMP_BSNS_NO
+       , CMP_ADDR1, CMP_ADDR2, CMP_ZIP
+       , CMP_PHONE, CMP_EMAIL, CMP_URL
+       , CMP_ESTBL_DATE, CMP_SMENP
+       , CMP_EMP_NO, CMP_AVR_WORK
+       , CMP_AVR_SALARY, CMP_MB_NAME
+       , CMP_CHECK, CMP_CONTENT
+       , CMP_LOGO, ATT_ID
+  	FROM COMPANY
+ 	WHERE CMP_ID = #{cmpId}
+</select>
+
+<select id="selectLikeCompanyList" parameterType="String" resultType="CompanyVO">
+SELECT A.CMP_ID, A.CMP_NAME, A.CMP_SMENP, A.CMP_MB_NAME
+FROM COMPANY A INNER JOIN LIKE_COMPANY B ON A.CMP_ID = B.CMP_ID 
+WHERE B.MEM_ID = #{mem_id}
+</select>
+</mapper>
+
+
+
+
+

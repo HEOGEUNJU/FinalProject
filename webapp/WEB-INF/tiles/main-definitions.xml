@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+  <definition name="parent" template="/WEB-INF/templates/template.jsp" preparer="commonViewPreparer">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+  	<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+<!--   	<put-attribute name="leftMenu" value="/includee/leftMenu.jsp" /> -->
+<!--   	<put-attribute name="footer" value="/includee/footer.jsp" /> -->
+		<put-attribute name="floating" value="/includee/floating.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+  </definition>
+  <definition name="member/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/member/{1}.jsp"/>
+  </definition>
+  <definition name="board/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/board/{1}.jsp"/>
+  </definition>
+  <definition name="announcement/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/announcement/{1}.jsp"/>
+  </definition>
+  <definition name="lab/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/lab/{1}.jsp"/>
+  </definition>
+  <definition name="selfpr/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/selfpr/{1}.jsp"/>
+  </definition>
+  <definition name="ask/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/ask/{1}.jsp"/>
+  </definition>
+  <definition name="join/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/join/{1}.jsp"/>
+  </definition>
+  <definition name="interview/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/interview/{1}.jsp"/>
+  </definition>
+  <definition name="transparency/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/transparency/{1}.jsp"/>
+  </definition>
+    <definition name="expert/application/*" extends="parent">
+  	<put-attribute name="content" value="/WEB-INF/views/expert/application/{1}.jsp"/>
+  </definition>
+</tiles-definitions>

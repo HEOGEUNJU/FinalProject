@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.EducationDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+	<select id="selectEducationList" parameterType="String" resultType="EducationVO">
+		SELECT EDU_SN, EDU_MAJOR, EDU_NAME, EDU_ENTERED, EDU_GRADUATED, EDU_STATUS, EDU_INSERT_DATE
+		FROM EDUCATION
+		WHERE MEM_ID = #{memId}
+		AND EDU_DELETE_DATE IS NULL
+	</select>
+	
+	<select id="selectEducation" parameterType="String" resultType="EducationVO">
+		SELECT *
+		FROM EDUCATION
+		WHERE EDU_SN = #{EducationSn}
+		AND EDU_DELETE_DATE IS NULL
+	</select>
+
+	<insert id="inserteEducation" parameterType="EducationVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="eduSn">
+			SELECT 'EDU'||LPAD(EDUCATION_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO EDUCATION (
+		    EDU_SN
+		    , MEM_ID
+		    , EDU_NAME
+		    , EDU_DEPARTMENT
+		    , EDU_MAJOR
+		    , EDU_ENTERED
+		    , EDU_GRADUATED
+		    , EDU_STATUS
+		    , EDU_SCORE
+		    , EDU_STANDARD
+		    , EDU_INSERT_DATE
+		) VALUES (
+			#{eduSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{eduName,jdbcType=VARCHAR}
+			, #{eduDepartment,jdbcType=VARCHAR}
+			, #{eduMajor,jdbcType=VARCHAR}
+			, #{eduEntered,jdbcType=DATE}
+			, #{eduGraduated,jdbcType=DATE}
+			, #{eduStatus,jdbcType=VARCHAR}
+			, #{eduScore,jdbcType=NUMERIC}
+			, #{eduStandard,jdbcType=NUMERIC}
+			, SYSDATE
+		)
+	</insert>
+	
+	<update id="updateEducation" parameterType="EducationVO">
+		UPDATE EDUCATION
+			SET
+				EDU_NAME = #{eduName,jdbcType=VARCHAR}
+				, EDU_DEPARTMENT = #{eduDepartment,jdbcType=VARCHAR}
+				, EDU_MAJOR = #{eduMajor,jdbcType=VARCHAR}
+				, EDU_ENTERED = #{eduEntered,jdbcType=DATE}
+				, EDU_GRADUATED = #{eduGraduated,jdbcType=DATE}
+				, EDU_STATUS = #{eduStatus,jdbcType=VARCHAR}
+				, EDU_SCORE = #{eduScore,jdbcType=NUMERIC}
+				, EDU_STANDARD = #{eduStandard,jdbcType=NUMERIC}
+		WHERE	
+			EDU_SN = #{eduSn,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteEducation" parameterType="String">
+		UPDATE EDUCATION
+			SET
+				EDU_DELETE_DATE = SYSDATE
+		WHERE	
+			EDU_SN = #{eduSn,jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="selectEducationForResume" parameterType="String" resultType="EducationVO">
+		SELECT *
+		FROM EDUCATION
+		WHERE MEM_ID = #{memId}
+		AND EDU_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM EDUCATION A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.EDU_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>
+</mapper>
+

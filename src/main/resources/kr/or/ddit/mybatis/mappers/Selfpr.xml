@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.selfpr.dao.SelfprDAO">
+	
+	<!-- dropdown box 선택값 -->
+	
+	<select id="selectRegionList" resultType="hashmap">
+		SELECT REGION_CODE "regionCode", REGION_NAME "regionName", REGION_REF "regionRef" 
+		FROM CD_REGION
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(regionRef)">
+					REGION_REF = #{regionRef}
+				</when>
+				<otherwise>
+					REGION_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectIndustry" resultType="hashmap">
+		SELECT INDUSTRY_CODE "industryCode", INDUSTRY_NAME "industryName", INDUSTRY_REF "industryRef" 
+		FROM CD_INDUSTRY
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(industryRef)">
+					INDUSTRY_REF = #{industryRef}
+				</when>
+				<otherwise>
+					INDUSTRY_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	
+	<!-- 검색 -->
+	<sql id="searchFrag">
+		<trim prefix="WHERE">
+			 1 = 1
+		    <if test="detailCondition neq null">
+		    AND (PR_ANNUAL LIKE '%' || #{detailCondition.prAnnual} || '%'
+	    	AND	PR_WANTTYPE LIKE '%' || #{detailCondition.prWanttype} || '%'
+    		AND PR_EDU LIKE '%' || #{detailCondition.prEdu} || '%' 
+    		AND	D.REGION_CODE LIKE '%' || #{detailCondition.regionCode} || '%'
+    		AND	E.INDUSTRY_CODE LIKE '%' || #{detailCondition.industryCode} || '%')
+		    </if>
+	    </trim>
+	</sql>
+	
+	<!-- 전체 글 조회 -->
+	
+	<select id="selectSelfprList" parameterType="PagingVO" resultType="SelfprVO">
+		WITH ORDEREDSELFPR AS (
+		    SELECT A.MEM_ID, A.PR_NO, A.PR_DATE, A.PR_NAME, A.PR_CONTENT, A.PR_WANTJOB, A.PR_ANNUAL, A.PR_WANTMN, A.PR_WANTTYPE, 
+		    	   A.REGION_CODE, A.INDUSTRY_CODE, A.PR_EDU,
+               	   B.MEM_NAME,
+               	   C.MEM_GENDER, C.MEM_EMAIL, C.MEM_TEL, C.MEM_ADDR1,
+               	   D.REGION_NAME,
+               	   E.INDUSTRY_NAME,
+               	   F.ATT_SAVENAME
+            FROM PR A
+            INNER JOIN MEMBER B ON (A.MEM_ID = B.MEM_ID)
+            INNER JOIN SEEKER C ON (B.MEM_ID = C.MEM_ID)
+            INNER JOIN CD_REGION D ON (A.REGION_CODE = D.REGION_CODE)
+            INNER JOIN CD_INDUSTRY E ON (A.INDUSTRY_CODE = E.INDUSTRY_CODE)
+            LEFT OUTER JOIN ATTACH F ON A.MEM_ID = F.TBL_ID
+            <include refid="searchFrag"></include>           
+		    ORDER BY PR_NO DESC
+		)
+		SELECT A.*
+		FROM (
+		    SELECT ROWNUM RNUM, ORDEREDSELFPR.*
+		    FROM ORDEREDSELFPR
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow} 
+	</select>	
+	
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM PR
+	</select>
+	
+	<!-- detail 개인정보 가져오는 쿼리 -->
+	<select id="selectSelfprMember" parameterType="int" resultType="SelfprVO">
+		SELECT A.MEM_ID, A.PR_NO, A.PR_NAME, A.PR_DATE, A.PR_CONTENT, A.PR_WANTJOB, A.PR_ANNUAL, A.PR_WANTMN, 
+			   A.PR_WANTTYPE, A.PR_EDU, 
+		       A.REGION_CODE, A.INDUSTRY_CODE,
+		       B.MEM_NAME,
+		       C.MEM_GENDER, C.MEM_EMAIL, C.MEM_TEL, C.MEM_ADDR1,
+		       D.REGION_NAME,
+		       E.INDUSTRY_NAME
+		FROM PR A
+		INNER JOIN MEMBER B ON (A.MEM_ID = B.MEM_ID)
+		INNER JOIN SEEKER C ON (B.MEM_ID = C.MEM_ID)
+		INNER JOIN CD_REGION D ON (A.REGION_CODE = D.REGION_CODE)
+		INNER JOIN CD_INDUSTRY E ON (A.INDUSTRY_CODE = E.INDUSTRY_CODE)
+		WHERE PR_NO = #{prNo}
+	</select>
+	
+	<!-- detail 학력 가져오는 쿼리 -->
+	<select id="selectSelfprEducation" parameterType="int" resultType="SelfprVO">
+		SELECT A.PR_NO,
+		       B.EDU_NAME, B.EDU_DEPARTMENT, B.EDU_MAJOR, B.EDU_STATUS, B.EDU_SCORE, B.EDU_ENTERED, B.EDU_GRADUATED
+		FROM PR A
+		INNER JOIN EDUCATION B ON (A.MEM_ID = B.MEM_ID)
+		WHERE PR_NO = #{prNo}
+		AND B.EDU_DELETE_DATE IS NULL
+	</select>
+	
+	<!-- detail 경력 가져오는 쿼리 -->
+	<select id="selectSelfprCareer" parameterType="int" resultType="SelfprVO">
+		SELECT A.MEM_ID,
+		       B.CAREER_CATEGORY, B.CAREER_COMPANY, B.CAREER_TASK, B.CAREER_CLASS, B.CAREER_JOIN, B.CAREER_RESIGN, B.CAREER_ANNUAL
+		FROM PR A
+		INNER JOIN CAREER B ON (A.MEM_ID = B.MEM_ID)
+		WHERE PR_NO = #{prNo}
+	</select>
+	
+	<!-- detail 자격증 가져오는 쿼리 -->
+	<select id="selectSelfprCert" parameterType="int" resultType="SelfprVO">
+	SELECT A.PR_NO,
+	       B.CERT_NO, B.CERT_NAME, B.CERT_DATE, B.CERT_INSTITUTION
+	FROM PR A
+	INNER JOIN CERTIFICATION B ON (A.MEM_ID = B.MEM_ID)
+	WHERE PR_NO = #{prNo}
+	</select>	
+	
+	<!-- detail 주요활동 가져오는 쿼리 -->
+	<select id="selectSelfprAct" parameterType="int" resultType="SelfprVO">
+	SELECT A.MEM_ID,
+	       B.ACT_NAME, B.ACT_CATEGORY, B.ACT_INSTITUTION, B.ACT_PERIOD
+	FROM PR A
+	INNER JOIN ACTIVITY B ON (A.MEM_ID = B.MEM_ID)
+	WHERE PR_NO = #{prNo}
+	</select>
+	
+	<!-- detail 수상경력 가져오는 쿼리 -->
+	<select id="selectSelfprAward" parameterType="int" resultType="SelfprVO">
+	SELECT A.MEM_ID,
+	       B.AWARD_COMPETITION, B.AWARD_NAME, B.AWARD_CATEGORY, B.AWARD_DATE, B.AWARD_INSTITUTION
+	FROM PR A
+	INNER JOIN AWARD B ON (A.MEM_ID = B.MEM_ID)
+	WHERE PR_NO = #{prNo}
+	</select>
+	
+	<!-- detail 교육이수 가져오는 쿼리 -->
+	<select id="selectSelfprCourse" parameterType="int" resultType="SelfprVO">
+	SELECT A.MEM_ID,
+	       B.COURSE_NAME, B.COURSE_CATEGORY, B.COURSE_INSTITUTION, B.COURSE_PERIOD
+	FROM PR A
+	INNER JOIN COURSE B ON (A.MEM_ID = B.MEM_ID)
+	WHERE PR_NO = #{prNo}	
+	</select>
+	<!-- 내가 작성한 홍보글 조회 쿼리 -->
+	<select id="selectSelfprMypage" parameterType="String" resultType="SelfprVO">
+	SELECT
+	    PR_NO,
+	    PR_NAME,
+	    PR_CONTENT,
+	    PR_DATE,
+	    MEM_ID,
+	    MYRESUME_ID,
+	    PR_WANTJOB,
+	    PR_ANNUAL,
+	    PR_WANTMN,
+	    PR_WANTTYPE,
+	    PR_EDU,
+	    REGION_CODE,
+	    INDUSTRY_CODE
+	FROM
+	    PR
+	WHERE MEM_ID = #{mem_id}
+	</select>
+	
+	<!-- insert 쿼리 -->
+	<insert id="insertSelfpr" parameterType="SelfprVO">	
+		<selectKey order="BEFORE" resultType="int" keyProperty="prNo">
+			SELECT PR_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT INTO PR (
+		    PR_NO,
+		    MEM_ID,
+		    PR_NAME,
+		    PR_CONTENT,
+		    PR_DATE,
+		    PR_WANTJOB,
+		    PR_ANNUAL,
+		    PR_WANTMN,
+		    PR_WANTTYPE,
+		    PR_EDU,
+		    REGION_CODE,
+		    INDUSTRY_CODE
+		) VALUES (
+		    #{prNo,jdbcType=NUMERIC}
+		    , #{memId,jdbcType=VARCHAR}
+		    , #{prName,jdbcType=VARCHAR}
+		    , #{prContent,jdbcType=VARCHAR}
+		    , SYSDATE
+		    , #{prWantjob,jdbcType=VARCHAR}
+		    , #{prAnnual,jdbcType=VARCHAR}
+		    , #{prWantmn,jdbcType=VARCHAR}
+		    , #{prWanttype,jdbcType=VARCHAR}
+		    , #{prEdu,jdbcType=VARCHAR}
+		    , #{regionCode,jdbcType=VARCHAR}
+		    , #{industryCode,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<!-- Update 쿼리 -->
+	
+	<update id="updateSelfpr" parameterType="SelfprVO">
+		UPDATE PR
+		SET
+			PR_NAME = #{prName,jdbcType=VARCHAR}
+			, PR_CONTENT = #{prContent,jdbcType=VARCHAR}
+			, PR_WANTJOB = #{prWantjob,jdbcType=VARCHAR}
+			, PR_ANNUAL = #{prAnnual,jdbcType=VARCHAR}
+			, PR_WANTMN = #{prWantmn,jdbcType=VARCHAR}
+			, PR_WANTTYPE = #{prWanttype,jdbcType=VARCHAR}
+			, PR_EDU = #{prEdu,jdbcType=VARCHAR}
+			, REGION_CODE = #{regionCode,jdbcType=VARCHAR}
+			, INDUSTRY_CODE = #{industryCode,jdbcType=VARCHAR}
+		WHERE PR_NO = #{prNo}
+	</update>
+	
+	<delete id="deleteSelfpr" parameterType="int">
+		DELETE
+		FROM PR
+		WHERE PR_NO = #{prNo}
+	</delete>
+	
+	<!-- 관심인재 추천 여부 확인쿼리 -->
+	<select id="matchingLike" parameterType="SelfprVO" resultType="int">
+		SELECT COUNT(*)
+		FROM INTEREST
+		WHERE MEM_ID = #{memId2} AND PR_NO = #{prNo}
+	</select>
+</mapper>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+  <definition name="join" template="/WEB-INF/templates/expertTemplate.jsp" preparer="commonViewPreparer">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+  	<put-attribute name="footer" value="/includee/footer.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+  	<put-attribute name="cssSource" value="/includee/cssScriptSources/css.jsp" />
+  	<put-attribute name="scriptSource" value="/includee/cssScriptSources/script.jsp" />  	
+  </definition>
+  <definition name="application" template="/WEB-INF/templates/expertTemplate.jsp" preparer="commonViewPreparer">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+  	<put-attribute name="footer" value="/includee/footer.jsp" />
+  	<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+  	<put-attribute name="cssSource" value="/includee/cssScriptSources/css.jsp" />
+  	<put-attribute name="scriptSource" value="/includee/cssScriptSources/script.jsp" />  	
+  </definition>
+  
+  <definition name="mypage" template="/WEB-INF/templates/mypageTemplate.jsp" preparer="commonViewPreparer">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+  	<put-attribute name="footer" value="/includee/footer.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+<!--   	<put-attribute name="leftMenu" value="/includee/leftMenu.jsp" /> -->
+  	<put-attribute name="cssSource" value="/includee/cssScriptSources/css.jsp" />
+  	<put-attribute name="scriptSource" value="/includee/cssScriptSources/script.jsp" />  	
+  </definition>
+  
+  <definition name="expert" template="/WEB-INF/templates/expertPayTemplate.jsp" preparer="commonViewPreparer">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="cssSource" value="/includee/cssScriptSources/css.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+  	<put-attribute name="scriptSource" value="/includee/cssScriptSources/script.jsp" />
+  </definition>
+  
+  <definition name="expert/*" extends="join">
+  	<put-attribute name="content" value="/WEB-INF/views/expert/{1}.jsp"/>
+  </definition>
+  <definition name="mypage/*" extends="mypage">
+  	<put-attribute name="content" value="/WEB-INF/views/mypage/{1}.jsp"/>
+  </definition>
+<!--     <definition name="join/*" extends="join">
+  	<put-attribute name="content" value="/WEB-INF/views/join/{1}.jsp"/>
+  </definition> -->
+</tiles-definitions>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+	<definition name="helpParent" template="/WEB-INF/templates/phjTemplate.jsp" preparer='commonViewPreparer'>
+		<put-attribute name="preScript" value="/includee/preScript.jsp" />
+		<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+		<put-attribute name="postScript" value="/includee/postScript.jsp" />
+	</definition>
+	<definition name="help/*" extends="helpParent">
+  		<put-attribute name="content" value="/WEB-INF/views/help/{1}.jsp"/>
+  	</definition>
+	<definition name="help/find/*" extends="helpParent">
+  		<put-attribute name="content" value="/WEB-INF/views/help/find/{1}.jsp"/>
+  	</definition>
+	<definition name="help/notice/*" extends="helpParent">
+  		<put-attribute name="content" value="/WEB-INF/views/help/notice/{1}.jsp"/>
+  	</definition>
+  	
+  	<definition name="systemParent" template="/WEB-INF/templates/phjTemplate.jsp" preparer='commonViewPreparer'>
+		<put-attribute name="preScript" value="/includee/preScript.jsp" />
+		<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+		<put-attribute name="postScript" value="/includee/postScript.jsp" />
+	</definition>
+	<definition name="system/*" extends="systemParent">
+		<put-attribute name="content" value="/WEB-INF/views/system/{1}.jsp"/>
+	</definition>
+  	
+</tiles-definitions>

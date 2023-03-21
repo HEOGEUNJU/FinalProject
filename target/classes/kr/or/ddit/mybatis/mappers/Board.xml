@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardDAO">
+
+	<sql id="searchFrag">
+		<trim prefix="where" prefixOverrides="AND">
+			<if test="PagingVO.simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(PagingVO.simpleCondition.searchWord)">
+	    		LOWER(BOARD_TITLE) LIKE '%' || #{PagingVO.simpleCondition.searchWord} || '%'
+	    	</if>
+	    	<if test="PagingVO.simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(PagingVO.simpleCondition.searchWord)">
+	    		OR LOWER(BOARD_CONTENT) LIKE '%' || #{PagingVO.simpleCondition.searchWord} || '%'
+	    	</if>
+	    	<if test="PagingVO.detailCondition.boardSub!=null or PagingVO.detailCondition.boardSub!=''">
+		  	   AND BOARD_SUB LIKE '%' || DECODE(#{PagingVO.detailCondition.boardSub},'0','전체글','1','신입','2','취준','3','채용공고','4','자소서','5','면접','6','Q&amp;A') || '%'
+		    </if>
+		</trim>
+	</sql>
+
+
+	<select id="selectBoard" parameterType="String" resultType="BoardVO">
+		SELECT A.BOARD_NO,
+		       A.MEM_ID,
+		       A.BOARD_SUB,
+		       A.BOARD_TITLE,
+		       A.BOARD_CONTENT,
+		       TO_CHAR(A.BOARD_DATE,'YYYY-MM-DD') BOARD_DATE,
+		       A.BOARD_HITS,
+		       A.LIKE_CNT
+<!-- 		       B.ATT_STRE_COURS, -->
+<!-- 		       B.ATT_SAVENAME, -->
+<!-- 		       B.ATT_FILENAME -->
+		  FROM BOARD A
+<!-- 		  INNER JOIN ATTACH B ON A.BOARD_NO = B.TBL_ID -->
+		 WHERE BOARD_NO = #{boardNo}
+	</select>
+
+	<select id="selectTotalRecord" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		  FROM BOARD
+	<include refid="searchFrag"/>
+	</select>
+
+	<select id="selectBoardList" parameterType="hashMap" resultType="BoardVO">
+		  WITH ORDEREDBOARD AS(
+		SELECT B.BOARD_NO,
+			   B.MEM_ID,
+			   B.BOARD_SUB,
+			   B.BOARD_TITLE,
+			   SUBSTR(B.BOARD_CONTENT,1,70) BOARD_CONTENT,
+			   TO_CHAR(B.BOARD_DATE,'YYYY-MM-DD') BOARD_DATE,
+			   B.BOARD_HITS,
+               NVL((SELECT COUNT(D.LIKE_TYPE) LIKE_TYPE
+               	 	  FROM LIKE_BOARD D
+                     WHERE D.BOARD_NO = B.BOARD_NO
+                  GROUP BY D.BOARD_NO),0) LIKE_CNT,
+               (SELECT COUNT(*) FROM BOARD_REPLY E WHERE E.BOARD_NO = B.BOARD_NO) REPLY_CNT
+		  FROM BOARD B
+	<include refid="searchFrag"/>
+	  ORDER BY <choose>
+	  				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(data) and data eq 'popular'">B.BOARD_HITS DESC</when>
+	  				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(data) and data eq 'reg_dt'">B.BOARD_DATE DESC</when>
+	  				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(data) and data eq 'maxLike'">B.LIKE_CNT DESC</when>
+	  				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(data) and data eq 'maxAnwr'">B.REPLY_CNT DESC</when>
+	  				<otherwise>B.BOARD_NO DESC</otherwise>
+	  			</choose>
+	  ) SELECT A.*
+	      FROM (
+	      	SELECT ROWNUM RNUM, ORDEREDBOARD.*
+	      	, count(1) over() as totalCnt
+	      	FROM ORDEREDBOARD
+	      ) A
+	      WHERE A.RNUM BETWEEN #{PagingVO.startRow} AND #{PagingVO.endRow}
+	</select>
+
+	<!-- 지난 3일동안 조회수가 높았던 인기글 20개 -->
+	<select id="selectHotBoard" resultType="BoardVO">
+		<![CDATA[
+		SELECT A.*
+		FROM
+		(
+		    SELECT ROW_NUMBER() OVER(ORDER BY BOARD_HITS DESC) RNUM, BOARD_NO, MEM_ID, BOARD_SUB, REPLY_CNT
+		         , BOARD_TITLE, SUBSTR(BOARD_CONTENT,1,70) BOARD_CONTENT, TO_CHAR(BOARD_DATE,'YYYY-MM-DD') BOARD_DATE, BOARD_HITS, BOARD_DEL_DATE, LIKE_CNT
+		    FROM   BOARD
+		) A
+		WHERE A.RNUM <= 10
+		]]>
+	</select>
+
+	<insert id="insertBoard" parameterType="BoardVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="boardNo">
+			SELECT 'BOD'||LPAD(BOARD_SEQ.NEXTVAL, 6, 0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO BOARD(
+			  BOARD_NO
+			, MEM_ID
+			, BOARD_SUB
+			, BOARD_TITLE
+			, BOARD_CONTENT
+			, BOARD_DATE
+			, BOARD_HITS
+		) VALUES (
+			#{boardNo,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{boardSub,jdbcType=VARCHAR}
+			, #{boardTitle,jdbcType=VARCHAR}
+			, #{boardContent,jdbcType=CLOB}
+			, SYSDATE
+			, 0
+		)
+	</insert>
+
+	<update id="updateBoard" parameterType="BoardVO">
+		UPDATE BOARD
+		   SET
+			   BOARD_TITLE   = #{boardTitle,jdbcType=VARCHAR},
+			   BOARD_CONTENT = #{boardContent,jdbcType=CLOB},
+			   LIKE_CNT		 = #{likeCnt},
+			   BOARD_SUB	 = #{boardSub,jdbcType=VARCHAR}
+		 WHERE BOARD_NO      = #{boardNo,jdbcType=VARCHAR}
+	</update>
+
+	<delete id="deleteBoard" parameterType="BoardVO">
+		UPDATE BOARD
+		   SET BOARD_DEL_DATE  = SYSDATE
+		       , BOARD_TITLE   = #{boardTitle,jdbcType=VARCHAR}
+		       , BOARD_CONTENT = #{boardContent,jdbcType=VARCHAR}
+		 WHERE BOARD_NO        = #{boardNo, jdbcType=VARCHAR}
+	</delete>
+
+	<update id="updateHits" parameterType="String">
+		UPDATE BOARD
+		   SET BOARD_HITS = BOARD_HITS+1
+		 WHERE BOARD_NO   = #{boardNo,jdbcType=VARCHAR}
+	</update>
+
+<!-- 좋아요기능 -->
+	<insert id="insertLike" parameterType="map">
+		INSERT INTO LIKE_BOARD(
+			 BOARD_NO
+			 , MEM_ID
+			 , LIKE_TYPE
+		) VALUES (
+			#{boardNo}
+			, #{memId}
+			, #{likeType}
+		)
+	</insert>
+
+	<select id="likeCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		  FROM LIKE_BOARD
+		 WHERE BOARD_NO = #{boardNo}
+<!-- 		   AND MEM_ID = #{memId} -->
+	</select>
+
+	<select id="likeOn" parameterType="String" resultType="String">
+		SELECT LIKE_TYPE
+		  FROM LIKE_BOARD
+		 WHERE BOARD_NO = #{boardNo}
+		   AND MEM_ID   = #{memId}
+	</select>
+
+
+	<!-- HOT 이번주 전체 인기 글 -->
+	<select id="hotBoard" resultType="BoardVO">
+		<![CDATA[
+		WITH T AS
+		(
+		    SELECT ROW_NUMBER() OVER (ORDER BY A.BOARD_HITS DESC) RNUM
+		         , A.BOARD_NO, A.MEM_ID, A.BOARD_SUB, A.BOARD_TITLE, SUBSTR(A.BOARD_CONTENT,1,70), A.BOARD_DATE, A.BOARD_HITS, A.BOARD_DEL_DATE, A.LIKE_CNT
+                 , (SELECT COUNT(*) FROM BOARD_REPLY B WHERE B.BOARD_NO = A.BOARD_NO) REPLY_CNT
+		    FROM   BOARD A
+		)
+		SELECT *
+		FROM   T
+		WHERE  T.RNUM <= 5
+		]]>
+	</select>
+
+	<!-- 댓글 수 -->
+	<select id="replyCount" parameterType="String" resultType="int">
+		 SELECT COUNT(*)
+		   FROM BOARD_REPLY
+		  WHERE BOARD_NO = #{boardNo}
+	</select>
+
+	<!-- 좋아요 목록 가져오기 -->
+	<select id="selectLikeList" parameterType="String" resultType="LikeeVO">
+		SELECT *
+		FROM LIKE_BOARD
+		WHERE BOARD_NO = #{boardNo}
+	</select>
+
+	<delete id="deleteLike" parameterType="map">
+		DELETE FROM LIKE_BOARD
+		 WHERE BOARD_NO = #{boardNo}
+		   AND MEM_ID = #{memId}
+	</delete>
+</mapper>

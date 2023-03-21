@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.FacilityDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+	<select id="selectFacilityList" parameterType="String" resultType="FacilityVO">
+		SELECT FACILITY_SN, FACILITY_NAME, FACILITY_LEVEL, FACILITY_CATEGORY, FACILITY_INSERT_DATE
+		FROM FACILITY
+		WHERE MEM_ID = #{memId}
+		AND FACILITY_DELETE_DATE IS NULL
+	</select>
+	
+	<select id="selectFacility" parameterType="String" resultType="FacilityVO">
+		SELECT *
+		FROM FACILITY
+		WHERE FACILITY_SN = #{FacilitySn}
+		AND FACILITY_DELETE_DATE IS NULL
+	</select>
+	
+	<insert id="insertFacility" parameterType="FacilityVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="facilitySn">
+			SELECT 'FAC'||LPAD(FACILITY_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO FACILITY (
+		    FACILITY_SN
+		    , MEM_ID
+		    , FACILITY_NAME
+		    , FACILITY_CATEGORY
+		    , FACILITY_LEVEL
+		    , FACILITY_GETDATE
+		    , FACILITY_PERIOD
+		    , FACILITY_INSERT_DATE
+		) VALUES (
+			#{facilitySn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{facilityName,jdbcType=VARCHAR}
+			, #{facilityCategory,jdbcType=VARCHAR}
+			, #{facilityLevel,jdbcType=VARCHAR}
+			, #{facilityGetdate,jdbcType=DATE}
+			, #{facilityPeriod,jdbcType=VARCHAR}
+			, SYSDATE
+		)			
+	</insert>
+	
+	<update id="updateFacility" parameterType="FacilityVO">
+		UPDATE FACILITY
+			SET
+				FACILITY_NAME = #{facilityName,jdbcType=VARCHAR}
+				, FACILITY_CATEGORY = #{facilityCategory,jdbcType=VARCHAR}
+				, FACILITY_LEVEL = #{facilityLevel,jdbcType=VARCHAR}
+				, FACILITY_GETDATE = #{facilityGetdate,jdbcType=DATE}
+				, FACILITY_PERIOD = #{facilityPeriod,jdbcType=VARCHAR}
+		WHERE	
+				FACILITY_SN = #{facilitySn,jdbcType=VARCHAR}
+			
+	</update>
+	
+	<delete id="deleteFacility" parameterType="String">
+		UPDATE FACILITY
+			SET
+				FACILITY_DELETE_DATE = SYSDATE
+		WHERE	
+				FACILITY_SN = #{facilitySn,jdbcType=VARCHAR}
+		
+	</delete>
+	
+	<select id="selectFacilityForResume" parameterType="String" resultType="FacilityVO">
+		SELECT *
+		FROM FACILITY
+		WHERE MEM_ID = #{memId}
+		AND FACILITY_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM FACILITY A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.FACILITY_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>	
+</mapper>
+

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.resume.dao.AwardDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  최경수     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+	<select id="selectAwardList" parameterType="String" resultType="AwardVO">
+		SELECT AWARD_SN, AWARD_COMPETITION, AWARD_NAME, AWARD_CATEGORY, AWARD_INSERT_DATE
+		FROM AWARD
+		WHERE MEM_ID = #{memId}
+		AND AWARD_DELETE_DATE IS NULL
+	</select>
+	
+	<select id="selectAward" parameterType="String" resultType="AwardVO">
+		SELECT *
+		FROM AWARD
+		WHERE AWARD_SN = #{awardSn}
+		AND AWARD_DELETE_DATE IS NULL
+	</select>
+	
+	<insert id="insertAward" parameterType="AwardVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="awardSn">
+			SELECT 'AWD'||LPAD(AWARD_SEQ.NEXTVAL, 6, '0')
+			FROM DUAL
+		</selectKey>
+		INSERT INTO AWARD (
+		    AWARD_SN
+		    , MEM_ID
+		    , AWARD_COMPETITION
+		    , AWARD_NAME
+		    , AWARD_CATEGORY
+		    , AWARD_DATE
+		    , AWARD_INSTITUTION
+		    , AWARD_INSERT_DATE
+		) VALUES (
+			#{awardSn,jdbcType=VARCHAR}
+			, #{memId,jdbcType=VARCHAR}
+			, #{awardCompetition,jdbcType=VARCHAR}
+			, #{awardName,jdbcType=VARCHAR}
+			, #{awardCategory,jdbcType=VARCHAR}
+			, #{awardDate,jdbcType=DATE}
+			, #{awardInstitution,jdbcType=VARCHAR}
+			, SYSDATE
+		)
+	</insert>
+	
+	<update id="updateAward" parameterType="AwardVO">
+		UPDATE AWARD
+			SET
+				AWARD_COMPETITION = #{awardCompetition,jdbcType=VARCHAR}
+				, AWARD_NAME = #{awardName,jdbcType=VARCHAR}
+				, AWARD_CATEGORY = #{awardCategory,jdbcType=VARCHAR}
+				, AWARD_DATE = #{awardDate,jdbcType=DATE}
+				, AWARD_INSTITUTION = #{awardInstitution,jdbcType=VARCHAR}
+		WHERE	
+			AWARD_SN = #{awardSn,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteAward" parameterType="String">
+		UPDATE AWARD
+			SET
+				AWARD_DELETE_DATE = SYSDATE
+		WHERE
+			AWARD_SN = #{awardSn,jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="selectAwardForResume" parameterType="String" resultType="AwardVO">
+		SELECT *
+		FROM AWARD
+		WHERE MEM_ID = #{memId}
+		AND AWARD_DELETE_DATE IS NULL
+		MINUS
+		SELECT A.*
+		FROM AWARD A
+		RIGHT OUTER JOIN RESUME_ITEM B ON A.AWARD_SN = B.RESUME_ITEM_SN
+		WHERE RESUME_SN = #{resumeSn}
+	</select>
+</mapper>
+

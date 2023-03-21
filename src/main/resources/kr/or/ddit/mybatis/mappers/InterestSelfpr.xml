@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.selfpr.dao.LikeDAO">
+
+	<sql id="searchFrag">
+		<trim prefix="AND">
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				INSTR(C.MEM_NAME, #{simpleCondition.searchWord}) > 0
+										
+				OR
+				
+				INSTR(B.PR_NAME, #{simpleCondition.searchWord}) > 0
+			</if>
+		</trim>
+	</sql>
+
+	<!-- 관심인재 전체 select 쿼리 -->
+	<select id="selectLikeList" parameterType="PagingVO" resultType="LikeVO">
+		WITH ORDERDLIKELIST AS(
+			SELECT A.INTE_NO, A.INTE_DATE, A.PR_NO, A.MEM_ID,
+			       B.PR_NAME, B.PR_WANTJOB, B.PR_ANNUAL, B.PR_WANTMN, B.PR_WANTTYPE, B.REGION_CODE, B.INDUSTRY_CODE, B.PR_EDU,
+			       C.MEM_NAME,
+			       D.REGION_NAME,
+			       E.INDUSTRY_NAME,
+			       F.ATT_SAVENAME
+			FROM INTEREST A
+			INNER JOIN PR B ON (A.PR_NO = B.PR_NO)
+			INNER JOIN MEMBER C ON (B.MEM_ID = C.MEM_ID)
+			INNER JOIN CD_REGION D ON (B.REGION_CODE = D.REGION_CODE)
+			INNER JOIN CD_INDUSTRY E ON (B.INDUSTRY_CODE = E.INDUSTRY_CODE)
+			LEFT OUTER JOIN ATTACH F ON C.MEM_ID = F.TBL_ID
+			WHERE A.MEM_ID = #{memId}
+			<include refid="searchFrag"></include>
+		)
+		SELECT A.*
+			FROM (
+				SELECT ROWNUM RNUM, ORDERDLIKELIST.*
+				FROM ORDERDLIKELIST
+		) A
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM INTEREST
+	</select>
+	
+	<!-- 관심인재 추천 여부 확인 쿼리 -->
+	<select id="matchingLike" parameterType="LikeVO" resultType="int">
+		SELECT COUNT(*)
+		FROM INTEREST
+		WHERE MEM_ID = #{memId} AND PR_NO = #{prNo}
+	</select>
+	
+	<!-- 관심인재 insert 쿼리 -->
+	<insert id="insertLike" parameterType="LikeVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="inteNo">
+			SELECT INTE_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+			INSERT INTO INTEREST (
+		    INTE_NO,
+		    INTE_DATE,
+		    PR_NO,
+		    MEM_ID
+		) VALUES (
+		    #{inteNo,jdbcType=NUMERIC}
+		    , SYSDATE
+		    , #{prNo,jdbcType=NUMERIC}
+		    , #{memId,jdbcType=VARCHAR}
+		)
+	</insert>	
+	
+	<!-- 관심인재 delete 쿼리 -->
+	<delete id="deleteLike" parameterType="LikeVO">
+		DELETE
+		FROM INTEREST
+		WHERE MEM_ID = #{memId} AND PR_NO = #{prNo}
+	</delete>
+</mapper>

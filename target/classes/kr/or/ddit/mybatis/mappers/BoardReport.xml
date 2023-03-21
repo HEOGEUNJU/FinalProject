@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardReportDAO">
+
+
+<!-- 게시글 신고 목록 -->
+<select id="selectReportList" resultType="BoardReportVO">
+	SELECT
+	   ROWNUM RNUM 
+	   , BOARD_RPT_SN
+       , MEM_ID
+       , BOARD_RPT_NO
+       , BOARD_RPT_DATE
+       , BOARD_RPT_REASON
+       , BOARD_RPT_CHECK 
+  	FROM BOARD_REPORT
+</select>
+
+
+
+</mapper>

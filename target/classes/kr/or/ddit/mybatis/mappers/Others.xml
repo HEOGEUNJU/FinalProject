@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.OtherDAO">
+	<select id="selectExfieldList" resultType="kr.or.ddit.expert.vo.ExfieldVO">
+	SELECT
+	    exfield_id,
+	    exfield_name
+	FROM
+	    exfield
+	</select>
+	<select id="selectExlprodList" resultType="kr.or.ddit.expert.vo.ExlprodVO">
+	SELECT
+	    exlprod_id,
+	    exlprod_name
+	FROM
+	    exlprod
+	   <where>
+   		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(exlprodId)">
+   			exlprod_id = #{exlprodId}
+   		</if>
+	   </where>
+	</select>
+	
+	<select id="selectExjobList" parameterType="String" resultType="kr.or.ddit.expert.vo.ExjobVO">
+	SELECT
+	    exjob_id,
+	    exjob_name,
+	    exfield_id
+	FROM
+	    exjob
+	   <where>
+	   		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(exfieldId)">
+	   			exfield_id = #{exfieldId}
+	   		</if>
+	   </where>
+	</select>
+
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.expert.dao.ExpertDAO">
+<insert id="applicationExpert" parameterType="kr.or.ddit.expert.vo.ExpertVO">
+	INSERT INTO expert (
+	    mem_id,
+	    expert_introduction,
+	    expert_joinpath,
+	    expert_field,
+	    expert_tag,
+	    expert_zip,
+	    expert_addr,
+	    expert_addr2,
+	    expert_tel,
+	    expert_email,
+	    expert_bank,
+	    expert_account,
+	    expert_holder,
+	    exfield_id,
+	    exjob_id,
+	    expert_applidate
+	) VALUES (
+	  #{memId,jdbcType=VARCHAR}
+	, #{expertIntroduction,jdbcType=VARCHAR}
+	, #{expertJoinpath,jdbcType=VARCHAR}
+	, #{expertField,jdbcType=VARCHAR}
+	, #{expertTag,jdbcType=VARCHAR}
+	, #{expertZip,jdbcType=VARCHAR}
+	, #{expertAddr,jdbcType=VARCHAR}
+	, #{expertAddr2,jdbcType=VARCHAR}
+	, #{expertTel,jdbcType=VARCHAR}
+	, #{expertEmail,jdbcType=VARCHAR}
+	, #{expertBank,jdbcType=VARCHAR}
+	, #{expertAccount,jdbcType=VARCHAR}
+	, #{expertHolder,jdbcType=VARCHAR}
+	, #{exfieldId,jdbcType=VARCHAR}
+	, #{exjobId,jdbcType=VARCHAR}
+	, sysdate
+	)
+</insert>
+
+<select id="selectExpert" parameterType="String" resultType="ExpertVO">
+	SELECT
+	    mem_id,
+	    mem_name,
+	    expert_approval,
+	    expert_approval_date,
+	    expert_introduction,
+	    expert_joinpath,
+	    expert_field,
+	    expert_tag,
+	    expert_zip,
+	    expert_addr,
+	    expert_addr2,
+	    expert_tel,
+	    expert_email,
+	    expert_bank,
+	    expert_account,
+	    expert_holder,
+	    exfield_id,
+	    exjob_id
+	FROM
+	    mem_expert
+	WHERE
+		mem_id = #{memId,jdbcType=VARCHAR}
+</select>
+
+
+
+<!-- ==================================== 시스템 관리 부분 ==================================== -->
+<!-- 전문가 신청 삭제 -->
+<delete id="deleteAppliExp" parameterType="ExpertVO">
+	DELETE FROM EXPERT
+	WHERE MEM_ID = #{memId}
+  	AND EXPERT_APPROVAL = 'N'	
+</delete>
+
+</mapper>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.InterviewDAO">
+
+	<sql id="searchFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				LOWER(INCUM_TITLE) LIKE '%' || #{simpleCondition.searchWord} || '%'
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				OR LOWER(SUB_TITLE) LIKE '%' || #{simpleCondition.searchWord} || '%'
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				OR LOWER(INCUM_NAME) LIKE '%' || #{simpleCondition.searchWord} || '%'
+			</if>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				OR LOWER(DEPARTMENT) LIKE '%' || #{simpleCondition.searchWord} || '%'
+			</if>
+			<if test="detailCondition.jobSub!=null or detailCondition.jobSub!=''">
+		  	   AND JOB_SUB LIKE '%' || DECODE(#{detailCondition.jobSub},'0','0','1','1','2','2','3','3','4','4','5','5','6','6','7','7','8','8','9','9','10','10','11','11',
+		  	   '12','12','13','13','14','14','15','15','16','16','17','17','18','18','19','19') || '%'
+		    </if>
+		</trim>
+	</sql>
+
+	<select id="selectInterview" parameterType="String" resultType="kr.or.ddit.board.vo.InterviewVO">
+		SELECT A.INCUM_NO,
+			   A.CMP_ID,
+			   A.DEPARTMENT,
+			   A.INCUM_TITLE,
+			   A.INCUM_NAME,
+			   A.SUB_TITLE,
+			   TO_CHAR(A.INCUM_DATE,'YYYY-MM-DD') INCUM_DATE,
+			   A.INCUM_HITS,
+			   A.TOP_TITLE,
+			   A.INCUM_DEL_DATE,
+			   A.QUESTION1,
+			   A.ANSWER1,
+			   A.QUESTION2,
+			   A.ANSWER2,
+			   A.QUESTION3,
+			   A.ANSWER3,
+			   A.QUESTION4,
+			   A.ANSWER4,
+			   A.QUESTION5,
+			   A.ANSWER5,
+			   A.QUESTION6,
+			   A.ANSWER6,
+			   A.QUESTION7,
+			   A.ANSWER7,
+			   A.QUESTION8,
+			   A.ANSWER8,
+			   A.QUESTION9,
+			   A.ANSWER9,
+			   A.QUESTION10,
+			   A.ANSWER10,
+			   A.JOB_SUB,
+			   B.CMP_NAME
+
+		  FROM INCUM_INTERVIEW A, COMPANY B
+		 WHERE INCUM_NO = #{incumNo}
+		   AND INCUM_DEL_DATE IS NULL
+		   AND A.CMP_ID = B.CMP_ID
+	</select>
+
+	<select id="selectTotalRecord" parameterType="PagingVO" resultType="int">
+		SELECT COUNT(*)
+		  FROM INCUM_INTERVIEW
+	<include refid="searchFrag"/>
+	</select>
+
+	<select id="selectInterviewList" resultType="kr.or.ddit.board.vo.InterviewVO">
+      WITH ORDEREDINTERVIEW AS(
+    SELECT A.INCUM_NO,
+           A.CMP_ID,
+           A.SUB_TITLE,
+           A.DEPARTMENT,
+           A.INCUM_TITLE,
+           A.JOB_SUB,
+           A.INCUM_NAME,
+           TO_CHAR(A.INCUM_DATE,'YYYY-MM-DD') INCUM_DATE,
+           A.INCUM_HITS,
+           B.CMP_NAME,
+           (SELECT ATT_SAVENAME FROM ATTACH WHERE TBL_ID=A.INCUM_NO AND ATT_NO='5') IMAGEFILE
+      FROM INCUM_INTERVIEW A, COMPANY B
+	<include refid="searchFrag"/>
+       AND A.INCUM_DEL_DATE IS NULL AND A.CMP_ID = B.CMP_ID
+     ORDER BY INCUM_NO DESC)
+	 	SELECT A.*
+	      FROM (
+	      	SELECT ROWNUM RNUM, ORDEREDINTERVIEW.*
+	      	, COUNT(1) OVER() AS totalCnt
+	      	  FROM ORDEREDINTERVIEW
+	      ) A
+	      <where>
+	      	<if test="_parameter neq null">
+	      		RNUM BETWEEN #{startRow} AND #{endRow}
+	      	</if>
+	      </where>
+	</select>
+
+	<insert id="insertInterview" parameterType="InterviewVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="incumNo">
+			SELECT 'INT'||LPAD(INTERVIEW_SEQ.NEXTVAL, 6, 0)
+			  FROM DUAL
+		</selectKey>
+		INSERT INTO INCUM_INTERVIEW(
+			  INCUM_NO
+			, CMP_ID
+			, SUB_TITLE
+			, DEPARTMENT
+			, INCUM_TITLE
+			, JOB_SUB
+			, INCUM_NAME
+			, INCUM_DATE
+			, INCUM_HITS
+			, TOP_TITLE
+			, QUESTION1
+			, ANSWER1
+			, QUESTION2
+			, ANSWER2
+			, QUESTION3
+			, ANSWER3
+			, QUESTION4
+			, ANSWER4
+			, QUESTION5
+			, ANSWER5
+			, QUESTION6
+			, ANSWER6
+			, QUESTION7
+			, ANSWER7
+			, QUESTION8
+			, ANSWER8
+			, QUESTION9
+			, ANSWER9
+			, QUESTION10
+			, ANSWER10
+		)VALUES(
+			  #{incumNo,jdbcType=VARCHAR}
+			, #{cmpId,jdbcType=VARCHAR}
+			, #{subTitle,jdbcType=VARCHAR}
+			, #{department,jdbcType=VARCHAR}
+			, #{incumTitle,jdbcType=VARCHAR}
+			, #{jobSub,jdbcType=VARCHAR}
+			, #{incumName,jdbcType=VARCHAR}
+			, SYSDATE
+			, 0
+			, #{topTitle,jdbcType=VARCHAR}
+			, #{question1,jdbcType=VARCHAR}
+			, #{answer1,jdbcType=CLOB}
+			, #{question2,jdbcType=VARCHAR}
+			, #{answer2,jdbcType=CLOB}
+			, #{question3,jdbcType=VARCHAR}
+			, #{answer3,jdbcType=CLOB}
+			, #{question4,jdbcType=VARCHAR}
+			, #{answer4,jdbcType=CLOB}
+			, #{question5,jdbcType=VARCHAR}
+			, #{answer5,jdbcType=CLOB}
+			, #{question6,jdbcType=VARCHAR}
+			, #{answer6,jdbcType=CLOB}
+			, #{question7,jdbcType=VARCHAR}
+			, #{answer7,jdbcType=CLOB}
+			, #{question8,jdbcType=VARCHAR}
+			, #{answer8,jdbcType=CLOB}
+			, #{question9,jdbcType=VARCHAR}
+			, #{answer9,jdbcType=CLOB}
+			, #{question10,jdbcType=VARCHAR}
+			, #{answer10,jdbcType=CLOB}
+		)
+	</insert>
+
+	<update id="updateInterview" parameterType="InterviewVO">
+		UPDATE INCUM_INTERVIEW
+		   SET
+		        TOP_TITLE   = #{topTitle,jdbcType=VARCHAR}
+			  , DEPARTMENT  = #{department,jdbcType=VARCHAR}
+			  , INCUM_TITLE = #{incumTitle,jdbcType=VARCHAR}
+			  , JOB_SUB     = #{jobSub,jdbcType=VARCHAR}
+			  , INCUM_NAME  = #{incumName,jdbcType=VARCHAR}
+			  , CMP_ID      = #{cmpId,jdbcType=VARCHAR}
+			  , SUB_TITLE   = #{subTitle,jdbcType=VARCHAR}
+			  , QUESTION1   = #{question1,jdbcType=VARCHAR}
+			  , ANSWER1     = #{answer1,jdbcType=CLOB}
+			  , QUESTION2   = #{question2,jdbcType=VARCHAR}
+			  , ANSWER2     = #{answer2,jdbcType=CLOB}
+			  , QUESTION3   = #{question3,jdbcType=VARCHAR}
+			  , ANSWER3     = #{answer3,jdbcType=CLOB}
+			  , QUESTION4   = #{question4,jdbcType=VARCHAR}
+			  , ANSWER4     = #{answer4,jdbcType=CLOB}
+			  , QUESTION5   = #{question5,jdbcType=VARCHAR}
+			  , ANSWER5     = #{answer5,jdbcType=CLOB}
+			  , QUESTION6   = #{question6,jdbcType=VARCHAR}
+			  , ANSWER6     = #{answer6,jdbcType=CLOB}
+			  , QUESTION7   = #{question7,jdbcType=VARCHAR}
+			  , ANSWER7     = #{answer7,jdbcType=CLOB}
+			  , QUESTION8   = #{question8,jdbcType=VARCHAR}
+			  , ANSWER8     = #{answer8,jdbcType=CLOB}
+			  , QUESTION9   = #{question9,jdbcType=VARCHAR}
+			  , ANSWER9     = #{answer9,jdbcType=CLOB}
+			  , QUESTION10  = #{question10,jdbcType=VARCHAR}
+			  , ANSWER10    = #{answer10,jdbcType=CLOB}
+		 WHERE INCUM_NO     = #{incumNo,jdbcType=VARCHAR}
+	</update>
+
+	<delete id="deleteInterview" parameterType="InterviewVO">
+		UPDATE INCUM_INTERVIEW
+		   SET INCUM_DEL_DATE = SYSDATE
+		 WHERE INCUM_NO       = #{incumNo, jdbcType=VARCHAR}
+	</delete>
+
+	<update id="updateHits" parameterType="String">
+		UPDATE INCUM_INTERVIEW
+		   SET INCUM_HITS = INCUM_HITS+1
+		 WHERE INCUM_NO   = #{incumNo, jdbcType=VARCHAR}
+	</update>
+
+</mapper>
+

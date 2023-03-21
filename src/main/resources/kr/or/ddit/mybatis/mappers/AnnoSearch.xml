@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.announcement.dao.AnnoSearchDAO">
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일                수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 2. 7.  양서연     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+
+	<select id="selectRegionList" resultType="hashmap">
+		SELECT REGION_CODE "regionCode", REGION_NAME "regionName", REGION_REF "regionRef" 
+		FROM CD_REGION
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(regionRef)">
+					REGION_REF = #{regionRef}
+				</when>
+				<otherwise>
+					REGION_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectIndustry" resultType="hashmap">
+		SELECT INDUSTRY_CODE "industryCode", INDUSTRY_NAME "industryName", INDUSTRY_REF "industryRef" 
+		FROM CD_INDUSTRY
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(industryRef)">
+					INDUSTRY_REF = #{industryRef}
+				</when>
+				<otherwise>
+					INDUSTRY_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectJob" resultType="hashmap">
+		SELECT JOB_CODE "jobCode", JOB_NAME "jobName", JOB_REF "jobRef" 
+		FROM CD_JOB
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(jobRef)">
+					JOB_REF = #{jobRef}
+				</when>
+	            <otherwise>
+					JOB_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectEduCd"  resultType="hashmap">
+		SELECT EDU_CODE "eduCode", EDU_NAME "eduName"
+		FROM CD_EDUCATION
+		ORDER BY 1
+	</select>
+	<select id="selectWelfareList" resultType="hashmap">
+		SELECT WELFARE_CODE "welfareCode", WELFARE_NAME "welfareName", WELFARE_REF "welfareRef"
+		FROM CD_WELFARE 
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(welfareRef)">
+					WELFARE_REF = #{welfareRef}
+				</when>
+	            <otherwise>
+					WELFARE_REF IS NULL
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectPositionList" resultType="hashmap">
+		SELECT POSITION_CODE "positionCode", POSITION_NAME "positionName", POSITION_REF "positionRef"
+		FROM CD_POSITION 
+		<where>
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(positionRef)">
+					POSITION_REF = #{positionRef}
+				</when>
+	            <otherwise>
+					POSITION_REF ='A' OR POSITION_REF ='B'
+				</otherwise>
+			</choose>
+		</where>
+		ORDER BY 1
+	</select>
+	<select id="selectEmpltypeList"  resultType="hashmap">
+		SELECT EMPLTYPE_CODE "empltypeCode", EMPLTYPE_NAME "empltypeName"
+		FROM CD_EMPLTYPE
+		ORDER BY 1
+	</select>
+</mapper>

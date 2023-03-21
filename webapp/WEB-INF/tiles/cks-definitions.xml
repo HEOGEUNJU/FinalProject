@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+	<!-- index -->
+	<definition name="indexParent" template="/WEB-INF/templates/indexTemplate.jsp">
+		<put-attribute name="preScript" value="/includee/preScript.jsp" />
+		<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+		<put-attribute name="postScript" value="/includee/postScript.jsp" />
+		<put-attribute name="floating" value="/includee/floating.jsp" />
+	</definition>
+	<definition name="index" extends="indexParent">
+	  	<put-attribute name="title" value="메인"/>
+		<put-attribute name="content" value="/WEB-INF/views/index.jsp"/>
+	</definition>
+	<!-- process, resume -->
+	<definition name="processParent" template="/WEB-INF/templates/processTemplate.jsp" preparer="commonViewPreparer">
+	 	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+	 	<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="subMenu" value="/includee/subMenu.jsp" />
+	 	<put-attribute name="floating" value="/includee/floating.jsp" />
+	 	<put-attribute name="postScript" value="/includee/postScript.jsp" />
+	</definition>
+	<definition name="resume/*" extends="processParent">
+	 	<put-attribute name="content" value="/WEB-INF/views/resume/{1}.jsp"/>
+	</definition>
+	<definition name="resume/items/*" extends="processParent">
+		<put-attribute name="content" value="/WEB-INF/views/resume/items/{1}.jsp" />
+	</definition>
+	<definition name="process/*" extends="processParent">
+	 	<put-attribute name="content" value="/WEB-INF/views/process/{1}.jsp" />
+	</definition>
+	<definition name="myintro/*" extends="processParent">
+		<put-attribute name="content" value="/WEB-INF/views/myintro/{1}.jsp" />
+	</definition>
+	<definition name="apply/*" extends="processParent">
+		<put-attribute name="content" value="/WEB-INF/views/apply/{1}.jsp"/>
+	</definition>
+</tiles-definitions>
